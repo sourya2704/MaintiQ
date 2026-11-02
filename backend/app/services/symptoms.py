@@ -21,6 +21,24 @@ SYMPTOM_TAXONOMY: dict[str, tuple[str, ...]] = {
     "alarm_or_fault_code": ("alarm", "fault code", "error code", "warning light"),
 }
 
+# Hindi (Devanagari) and Hinglish cues, since Prisma returns code-mixed text for Hindi speakers.
+# Hindi places negation after the word ("धुआं नहीं है"), so these are checked differently.
+HINDI_TAXONOMY: dict[str, tuple[str, ...]] = {
+    "vibration": ("कंपन", "हिल रह", "थरथरा", "वाइब्रेशन"),
+    "overheating": ("गर्म", "गरम", "गर्मी", "ओवरहीट", "तापमान", "garam", "garm"),
+    "abnormal_noise": ("आवाज़", "आवाज", "शोर", "घरघरा", "awaaz", "awaz", "shor"),
+    "leak": ("टपक", "रिसाव", "रिस रह", "लीक", "tapak"),
+    "smoke_or_burning": ("धुआं", "धुआँ", "धुंआ", "जलने की", "जल रह", "dhuan", "dhuaan"),
+    "electrical_fault": ("चिंगारी", "स्पार्क", "ट्रिप"),
+    "pressure_abnormal": ("प्रेशर", "दबाव"),
+    "stoppage": ("बंद हो गय", "रुक गय", "अटक", "जाम हो"),
+    "wear_or_damage": ("घिस", "टूट", "ढीला", "दरार"),
+    "speed_abnormal": ("धीमा", "धीरे चल", "स्पीड"),
+    "lubrication": ("ग्रीस",),
+    "alarm_or_fault_code": ("अलार्म",),
+}
+HINDI_HAZARD_TERMS = ("धुआं", "धुआँ", "धुंआ", "आग", "चिंगारी", "करंट", "झटका", "dhuan")
+
 HAZARD_TERMS = (
     "smoke", "fire", "flame", "spark", "burning smell", "electric shock", "shock", "exposed wire",
     "gas leak", "explosion", "injur", "guard removed", "interlock",
@@ -50,11 +68,33 @@ def _affirmed(needle: str, text: str) -> bool:
     return False
 
 
+HINDI_NEGATION = re.compile(r"(नहीं|नही|ना\s|nahi|nahin)")
+HINDI_CLAUSE_BREAK = re.compile(r"[।.;:!?,]|\s(और|लेकिन|पर|मगर|aur|lekin)\s")
+
+
+def _affirmed_hindi(needle: str, text: str) -> bool:
+    """Hindi negation follows the word in the same clause ("गर्म नहीं है"); "बिना" precedes it."""
+    for m in re.finditer(r"(?<![\w\u0900-\u097F])" + re.escape(needle), text):
+        after = text[m.end() : m.end() + 30]
+        brk = HINDI_CLAUSE_BREAK.search(after)
+        after = after[: brk.start()] if brk else after
+        before = text[max(0, m.start() - 10) : m.start()]
+        if not HINDI_NEGATION.search(after) and "बिना" not in before:
+            return True
+    return False
+
+
 def tag_symptoms(*texts: str) -> list[str]:
     blob = " ".join(t for t in texts if t).lower()
-    return [tag for tag, needles in SYMPTOM_TAXONOMY.items() if any(_affirmed(n, blob) for n in needles)]
+    return [
+        tag for tag, needles in SYMPTOM_TAXONOMY.items()
+        if any(_affirmed(n, blob) for n in needles)
+        or any(_affirmed_hindi(n, blob) for n in HINDI_TAXONOMY.get(tag, ()))
+    ]
 
 
 def detect_hazard(text: str) -> bool:
     lowered = (text or "").lower()
-    return any(_affirmed(term, lowered) for term in HAZARD_TERMS)
+    return any(_affirmed(term, lowered) for term in HAZARD_TERMS) or any(
+        _affirmed_hindi(term, lowered) for term in HINDI_HAZARD_TERMS
+    )

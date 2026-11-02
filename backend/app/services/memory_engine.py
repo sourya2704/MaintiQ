@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models import Incident, Machine
 from app.models.enums import ProcessingStatus
+from app.services.symptoms import SYMPTOM_TAXONOMY
 
 STOPWORDS = {
     "the", "and", "for", "but", "was", "were", "with", "that", "this", "there", "then", "than", "have", "has", "had",
@@ -58,9 +59,14 @@ def _stem(word: str) -> str:
     return word[:5]
 
 
+# Words from canonical tag names are already explained by "Shared symptom", so they
+# are left out of the "Text overlap" explanation.
+TAG_WORDS = {w for tag in SYMPTOM_TAXONOMY for w in tag.split("_")}
+
+
 def _matched_terms(terms: list[str], candidate_text: str, limit: int = 5) -> list[str]:
     cand = {_stem(w) for w in re.findall(r"[a-z][a-z0-9\-]{3,}", candidate_text.lower())}
-    return [t for t in terms if len(t) >= 4 and _stem(t) in cand][:limit]
+    return [t for t in terms if len(t) >= 4 and t not in TAG_WORDS and _stem(t) in cand][:limit]
 
 
 def find_related(db: Session, q: MemoryQuery) -> list[dict]:

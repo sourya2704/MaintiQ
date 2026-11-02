@@ -11,7 +11,15 @@ from app.core.errors import conflict
 from app.models import Incident, Machine, User
 from app.models.enums import MachineStatus, ResolutionStatus, Role
 from app.schemas.common import Page
-from app.schemas.machines import MachineCreate, MachineDetail, MachineListItem, MachineOut, MachineUpdate, TimelineEntry
+from app.schemas.machines import (
+    MachineCreate,
+    MachineDetail,
+    MachineListItem,
+    MachineOut,
+    MachineUpdate,
+    SymptomCount,
+    TimelineEntry,
+)
 from app.services import audit
 
 router = APIRouter(prefix="/api/machines", tags=["machines"])
@@ -98,6 +106,14 @@ def get_machine(machine_id: uuid.UUID, db: DB, user: CurrentUser,
         .order_by(Incident.occurred_at.desc()).limit(timeline_limit)
     ).all()
     total_i, open_i, _ = _counts(db, [machine.id]).get(machine.id, (0, 0, None))
+    tag = func.unnest(Incident.symptom_tags).label("tag")
+    recurring_rows = db.execute(
+        select(tag, func.count().label("n"), func.max(Incident.occurred_at))
+        .where(Incident.machine_id == machine.id)
+        .group_by("tag")
+        .order_by(func.count().desc(), "tag")
+    ).all()
+    recurring = [SymptomCount(tag=t, count=n, last_seen=last) for t, n, last in recurring_rows]
     timeline = []
     for inc in incidents:
         latest = inc.outcomes[-1] if inc.outcomes else None
@@ -109,7 +125,7 @@ def get_machine(machine_id: uuid.UUID, db: DB, user: CurrentUser,
         ))
     return MachineDetail(
         **MachineOut.model_validate(machine).model_dump(),
-        incident_count=total_i, open_incident_count=open_i, timeline=timeline,
+        incident_count=total_i, open_incident_count=open_i, recurring_symptoms=recurring, timeline=timeline,
     )
 
 

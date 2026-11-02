@@ -177,6 +177,7 @@ def list_incidents(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     include_seed: bool = True,
+    mine: bool = Query(default=False, description="Only incidents I reported"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ):
@@ -197,7 +198,9 @@ def list_incidents(
         stmt = stmt.where(Incident.occurred_at <= date_to)
     if not include_seed:
         stmt = stmt.where(Incident.is_seed.is_(False))
-    total = db.scalar(select(func.count()).select_from(stmt.subquery()))
+    if mine:
+        stmt = stmt.where(Incident.reporter_id == user.id)
+    total =db.scalar(select(func.count()).select_from(stmt.subquery()))
     rows = db.scalars(
         stmt.options(selectinload(Incident.machine), selectinload(Incident.reporter))
         .order_by(Incident.occurred_at.desc()).offset((page - 1) * page_size).limit(page_size)

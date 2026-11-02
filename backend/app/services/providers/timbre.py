@@ -30,7 +30,7 @@ def _mock_wav(seconds: float = 0.6, rate: int = 16000) -> bytes:
     return buf.getvalue()
 
 
-def synthesize(text: str) -> tuple[bytes, CallMeta]:
+def synthesize(text: str, language: str | None = None) -> tuple[bytes, CallMeta]:
     settings = get_settings()
     if settings.timbre_mode == "disabled":
         raise ProviderDisabled("timbre")
@@ -43,7 +43,7 @@ def synthesize(text: str) -> tuple[bytes, CallMeta]:
         "text": text[: settings.timbre_max_chars],
         "voice": settings.timbre_voice,
         "model": settings.timbre_model,
-        "language": settings.timbre_language,
+        "language": language or settings.timbre_language,
         "speed": 1.0,
         "audio_config": {
             "sample_rate": 24000,

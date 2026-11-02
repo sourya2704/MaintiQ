@@ -1,0 +1,94 @@
+import json
+
+import httpx
+
+from app.services.providers import base as provider_base
+from app.services.symptoms import detect_hazard, tag_symptoms
+from tests.conftest import make_machine, wav_bytes
+
+
+def use_transport(monkeypatch, handler):
+    monkeypatch.setattr(provider_base, "http_client",
+                        lambda timeout: httpx.Client(transport=httpx.MockTransport(handler), timeout=timeout))
+
+
+def _form_field(body: bytes, name: str) -> str | None:
+    marker = f'name="{name}"\r\n\r\n'.encode()
+    if marker not in body:
+        return None
+    return body.split(marker, 1)[1].split(b"\r\n--", 1)[0].decode()
+
+
+def test_long_recording_is_chunked_with_context_and_keyterms(client, auth, settings, monkeypatch):
+    settings.prisma_mode, settings.gnani_api_key = "live", "k"
+    calls = []
+
+    def handler(request):
+        calls.append(request.content)
+        return httpx.Response(200, json={"success": True, "request_id": f"r{len(calls)}",
+                                         "transcript": f"part {len(calls)}.", "model": "prisma-v3.0"})
+
+    use_transport(monkeypatch, handler)
+    m = make_machine(client, auth, code="M-104", name="Line 1 drive motor")
+    r = client.post("/api/incidents", headers=auth, data={"machine_id": m["id"]},
+                    files={"audio_file": ("long.wav", wav_bytes(45), "audio/wav")})
+    assert r.status_code == 201, r.text
+    inc = client.get(f"/api/incidents/{r.json()['id']}", headers=auth).json()
+
+    assert len(calls) == 2
+    assert inc["transcript_original"] == "part 1. part 2."
+    assert _form_field(calls[0], "previous_text") is None
+    assert _form_field(calls[1], "previous_text") == "part 1."
+    assert "M-104" in json.loads(_form_field(calls[0], "keyterms"))
+    assert inc["jobs"][0]["provider_request_id"] == "r1,r2"
+
+
+def test_negated_symptoms_and_hazards_are_ignored():
+    assert tag_symptoms("There is no smoke and no burning smell.") == []
+    assert not detect_hazard("There is no smoke and no burning smell.")
+    assert detect_hazard("No leak, but heavy smoke from the panel.")
+    assert tag_symptoms("It is not vibrating anymore but the housing is hot") == ["overheating"]
+    assert tag_symptoms("The thermal gun is not working") == []
+
+
+def test_change_password(client, auth):
+    bad = client.post("/api/auth/change-password", headers=auth,
+                      json={"current_password": "nope", "new_password": "NewPassword1!"})
+    assert bad.status_code == 400
+    ok = client.post("/api/auth/change-password", headers=auth,
+                     json={"current_password": "Password123!", "new_password": "NewPassword1!"})
+    assert ok.status_code == 200
+    assert client.post("/api/auth/login", json={"email": "lead@acme.example.com", "password": "NewPassword1!"}).status_code == 200
+
+
+def test_mine_filter_and_recurring_symptoms(client, auth):
+    m = make_machine(client, auth)
+    for text in ("Motor vibrating and hot.", "Vibration again at full speed.", "Grinding noise at start."):
+        client.post("/api/incidents", headers=auth, data={"machine_id": m["id"], "transcript": text})
+    client.post("/api/users", headers=auth, json={"name": "T", "email": "t@acme.example.com", "password": "Password123!"})
+    tok = client.post("/api/auth/login", json={"email": "t@acme.example.com", "password": "Password123!"}).json()["access_token"]
+    tech = {"Authorization": f"Bearer {tok}"}
+    client.post("/api/incidents", headers=tech, data={"machine_id": m["id"], "transcript": "Leak at seal."})
+
+    assert client.get("/api/incidents", headers=tech, params={"mine": True}).json()["total"] == 1
+    assert client.get("/api/incidents", headers=tech).json()["total"] == 4
+
+    recurring = client.get(f"/api/machines/{m['id']}", headers=auth).json()["recurring_symptoms"]
+    assert recurring[0]["tag"] == "vibration" and recurring[0]["count"] == 2
+
+
+def test_evon_connection_check(client, auth, settings, monkeypatch):
+    assert client.get("/api/settings/integrations/evon/check", headers=auth).json()["reachable"] is None
+    settings.evon_mode = "live"
+    use_transport(monkeypatch, lambda r: httpx.Response(200, json={"data": [{"id": settings.evon_model}]}))
+    body = client.get("/api/settings/integrations/evon/check", headers=auth).json()
+    assert body["reachable"] is True and body["configured_model_served"] is True
+
+
+def test_hindi_and_hinglish_symptoms():
+    code_mixed = "pump P-201 की seal से पानी टपक रहा है और motor सामान्य से ज्यादा गर्म है"
+    assert tag_symptoms(code_mixed) == ["overheating", "leak"]
+    assert tag_symptoms("motor गर्म नहीं है लेकिन बहुत आवाज़ कर रहा है") == ["abnormal_noise"]
+    assert detect_hazard("पैनल से धुआं निकल रहा है")
+    assert not detect_hazard("धुआं नहीं है")
+    assert tag_symptoms("motor bahut garam hai aur awaaz aa rahi hai") == ["overheating", "abnormal_noise"]

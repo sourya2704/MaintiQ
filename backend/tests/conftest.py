@@ -15,6 +15,7 @@ os.environ["EVON_MODE"] = "mock"
 os.environ["TIMBRE_MODE"] = "mock"
 os.environ["JWT_SECRET"] = "test-secret-that-is-at-least-32-bytes-long"
 os.environ["AUTH_RATE_LIMIT_PER_MINUTE"] = "1000"
+os.environ["RETENTION_INTERVAL_MINUTES"] = "0"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402

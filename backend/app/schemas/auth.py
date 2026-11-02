@@ -55,3 +55,8 @@ class UserUpdateIn(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     role: Role | None = None
     is_active: bool | None = None
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)

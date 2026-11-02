@@ -1,0 +1,36 @@
+# Local stack: PostgreSQL + Mantiq API.
+#   cp backend/.env.example backend/.env   (add GNANI_API_KEY etc.)
+#   docker compose up --build
+#   docker compose exec api python -m scripts.seed   # optional fictional demo data
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mantiq
+      POSTGRES_PASSWORD: mantiq
+      POSTGRES_DB: mantiq
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mantiq"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+psycopg://mantiq:mantiq@db:5432/mantiq
+      STORAGE_DIR: /app/storage
+    ports:
+      - "8000:8000"
+    volumes:
+      - audio:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  audio:

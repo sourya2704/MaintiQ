@@ -66,3 +66,28 @@ def chat_json(messages: list[dict], json_schema: dict) -> tuple[str, CallMeta]:
         extra={"usage": body.get("usage")},
     )
     return content, meta
+
+
+def check_connection() -> dict:
+    """Reachability check against `{EVON_BASE_URL}/models`; never raises."""
+    settings = get_settings()
+    if settings.evon_mode != "live":
+        return {"mode": settings.evon_mode, "reachable": None,
+                "message": "Evon is not in live mode; drafts come from the labelled mock extractor"}
+    headers = {"Authorization": f"Bearer {settings.evon_api_key}"} if settings.evon_api_key else {}
+    started = time.perf_counter()
+    try:
+        with base.http_client(10) as client:
+            response = client.get(settings.evon_base_url.rstrip("/") + "/models", headers=headers)
+    except httpx.HTTPError:
+        return {"mode": "live", "reachable": False, "message": "Could not reach the Evon endpoint"}
+    latency_ms = int((time.perf_counter() - started) * 1000)
+    if response.status_code != 200:
+        return {"mode": "live", "reachable": False, "latency_ms": latency_ms,
+                "message": base.map_http_error("evon", response).safe_message}
+    try:
+        models = [m.get("id") for m in response.json().get("data", [])]
+    except (ValueError, AttributeError):
+        models = []
+    return {"mode": "live", "reachable": True, "latency_ms": latency_ms, "models": models,
+            "configured_model_served": settings.evon_model in models if models else None}

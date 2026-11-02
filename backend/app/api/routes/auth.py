@@ -7,7 +7,8 @@ from app.core.rate_limit import auth_rate_limit
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models import Organization, User
 from app.models.enums import Role
-from app.schemas.auth import LoginIn, MeOut, RegisterIn, TokenOut
+from app.schemas.auth import ChangePasswordIn, LoginIn, MeOut, RegisterIn, TokenOut
+from app.schemas.common import Message
 from app.services import audit
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -54,3 +55,16 @@ def login(body: LoginIn, db: DB):
 @router.get("/me", response_model=MeOut)
 def me(user: CurrentUser):
     return user
+
+
+@router.post("/change-password", response_model=Message, dependencies=[Depends(auth_rate_limit)])
+def change_password(body: ChangePasswordIn, db: DB, user: CurrentUser):
+    if not verify_password(body.current_password, user.password_hash):
+        raise AppError(400, "invalid_credentials", "Current password is incorrect")
+    if body.current_password == body.new_password:
+        raise AppError(422, "validation_error", "New password must be different")
+    user.password_hash = hash_password(body.new_password)
+    audit.record(db, organization_id=user.organization_id, actor_id=user.id, entity_type="user",
+                 entity_id=user.id, action="password_changed")
+    db.commit()
+    return Message(message="Password updated")

@@ -5,10 +5,10 @@ from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser, require_roles
 from app.core.config import get_settings
-from app.db.base import utcnow
 from app.models import AIProcessingJob, AudioAsset, Incident, User
 from app.models.enums import JobStatus, RetentionStatus, Role
-from app.services import audit, storage
+from app.services import retention, storage
+from app.services.providers import evon
 
 router = APIRouter(prefix="/api", tags=["settings"])
 Admin = Annotated[User, Depends(require_roles(Role.admin))]
@@ -65,25 +65,19 @@ def integrations(db: DB, user: CurrentUser):
 
 @router.post("/admin/retention/run")
 def run_retention(db: DB, admin: Admin):
-    """Delete stored audio whose retention period has passed (FR-022). Transcripts and incidents are kept."""
-    due = db.scalars(
-        select(AudioAsset).join(Incident, Incident.id == AudioAsset.incident_id)
-        .where(Incident.organization_id == admin.organization_id,
-               AudioAsset.retention_status == RetentionStatus.retained,
-               AudioAsset.delete_after <= utcnow())
-    ).all()
-    for asset in due:
-        storage.delete_file(asset.storage_key)
-        asset.storage_key = None
-        asset.retention_status = RetentionStatus.deleted
-        asset.deleted_at = utcnow()
-        audit.record(db, organization_id=admin.organization_id, actor_id=admin.id, entity_type="incident",
-                     entity_id=asset.incident_id, action="audio_deleted",
-                     details={"audio_id": str(asset.id), "reason": "retention_policy"})
+    """Delete stored audio whose retention period has passed (FR-022). Transcripts and incidents are kept.
+    The same sweep also runs automatically every RETENTION_INTERVAL_MINUTES."""
+    deleted = retention.apply_retention(db, admin.organization_id, admin.id)
     db.commit()
     remaining = db.scalar(
         select(func.count()).select_from(AudioAsset).join(Incident, Incident.id == AudioAsset.incident_id)
         .where(Incident.organization_id == admin.organization_id,
                AudioAsset.retention_status == RetentionStatus.retained)
     )
-    return {"deleted": len(due), "retained": remaining}
+    return {"deleted": deleted, "retained": remaining}
+
+
+@router.get("/settings/integrations/evon/check")
+def check_evon(_: Admin):
+    """Probe the configured Evon endpoint (lists served models; no inference cost)."""
+    return evon.check_connection()

@@ -83,7 +83,14 @@ class TimelineEntry(BaseModel):
     is_seed: bool
 
 
+class SymptomCount(BaseModel):
+    tag: str
+    count: int
+    last_seen: datetime
+
+
 class MachineDetail(MachineOut):
     incident_count: int
     open_incident_count: int
+    recurring_symptoms: list[SymptomCount]
     timeline: list[TimelineEntry]
