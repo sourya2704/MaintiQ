@@ -10,7 +10,21 @@ Docs: [PRD](docs/PRD.md) · [High-Level Design](docs/HLD.md)
 
 ## Status
 - [x] Backend API (FastAPI + PostgreSQL): `backend/`, live-tested with Gnani Prisma and Timbre
-- [ ] Frontend (React)
+- [x] Frontend (React + Three.js): `frontend/`
+
+## Frontend
+A futuristic control-room UI built with React, Vite, Tailwind, React Three Fiber and Framer Motion.
+- **3D gear train:** on the login and dashboard pages. It spins faster as you scroll and tilts toward the cursor.
+- **3D plant floor:** every machine is shown as a procedural 3D model, coloured by status. Open symptoms animate it: shake for vibration, red glow for heat, drops for a leak, smoke for burning. Scrolling flies the camera from an overview down to floor level, and clicking a machine opens it.
+- **Machine viewer:** drag to orbit, scroll to turn.
+- **Controls:** 3D push buttons, tilt cards, a 3D mic recorder with live level rings and waveform, and a custom machinery icon set.
+- **Workflow:** record or upload a voice note, then review the transcript, run the Evon draft, confirm it and record the outcome. Failure Memory, the incident log with filters, and settings for providers, the team and retention complete the app.
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173 (proxies /api to :8000)
+```
 
 ## Backend quick start (Docker)
 ```bash

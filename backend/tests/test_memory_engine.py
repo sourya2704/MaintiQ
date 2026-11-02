@@ -63,3 +63,10 @@ def test_dashboard_reflects_seed(client):
     assert d["incidents"]["total"] == total == d["incidents"]["seed_records"]
     assert d["incidents"]["open"] == 4  # monitoring, open(no outcome) x2, unresolved
     assert d["top_symptoms"][0]["tag"] == "vibration"
+
+
+def test_search_without_machine_has_no_machine_type_rationale(client):
+    seed()
+    res = client.get("/api/memory/search", headers=login_seed(client), params={"q": "pump seal leaking"}).json()
+    assert res["results"]
+    assert all(not any("machine type" in why for why in r["rationale"]) for r in res["results"])

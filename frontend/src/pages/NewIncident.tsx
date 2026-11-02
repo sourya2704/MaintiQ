@@ -1,0 +1,192 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { KeyboardIcon, MachineTypeIcon, MicIcon, UploadIcon } from "../components/icons/MachineIcons";
+import { Recorder } from "../components/incident/Recorder";
+import { PageHeader } from "../components/layout/AppShell";
+import { Button3D } from "../components/ui/Button3D";
+import { ErrorBox, Field, Panel, Select, Textarea, useToast } from "../components/ui/kit";
+import { api } from "../lib/api";
+import { fileSize } from "../lib/format";
+import type { IncidentDetail, IntegrationStatus, Machine, Page } from "../lib/types";
+
+type Mode = "record" | "upload" | "type";
+const LANGS = [
+  { v: "en-IN", l: "English (India)" },
+  { v: "hi-IN", l: "Hindi" },
+  { v: "indic-auto", l: "Auto-detect Indian language" },
+];
+
+export default function NewIncident() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const [machineId, setMachineId] = useState(params.get("machine") ?? "");
+  const [mode, setMode] = useState<Mode>("record");
+  const [file, setFile] = useState<File | null>(null);
+  const [text, setText] = useState("");
+  const [lang, setLang] = useState("en-IN");
+  const [drag, setDrag] = useState(false);
+  // One key per draft: a double-submit or network retry returns the same incident.
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), [machineId, mode, file, text]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const machines = useQuery({ queryKey: ["machines", "all"], queryFn: () => api.get<Page<Machine>>("/api/machines", { page_size: 100 }) });
+  const integrations = useQuery({ queryKey: ["integrations"], queryFn: () => api.get<IntegrationStatus>("/api/settings/integrations") });
+  const prisma = integrations.data?.providers.find((p) => p.provider === "prisma");
+  const selected = machines.data?.items.find((m) => m.id === machineId);
+
+  const submit = useMutation({
+    mutationFn: () => {
+      const form = new FormData();
+      form.set("machine_id", machineId);
+      form.set("language_code", lang);
+      if (mode === "type") form.set("transcript", text.trim());
+      else if (file) form.set("audio_file", file, file.name);
+      return api.upload<IncidentDetail>("/api/incidents", form, { "Idempotency-Key": idempotencyKey });
+    },
+    onSuccess: (inc) => {
+      qc.invalidateQueries({ queryKey: ["incidents"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast("ok", mode === "type" ? "Incident created" : "Voice note uploaded. Transcribing with Prisma…");
+      navigate(`/incidents/${inc.id}`);
+    },
+  });
+
+  const ready = Boolean(machineId) && (mode === "type" ? text.trim().length > 3 : Boolean(file));
+
+  const tabs: { id: Mode; label: string; icon: typeof MicIcon }[] = [
+    { id: "record", label: "Record", icon: MicIcon },
+    { id: "upload", label: "Upload", icon: UploadIcon },
+    { id: "type", label: "Type", icon: KeyboardIcon },
+  ];
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <PageHeader kicker="New incident" title="Report a fault" icon={<MicIcon size={28} />} />
+
+      <div className="space-y-6">
+        <Panel title="1 · Machine" icon={<MachineTypeIcon type={selected?.type ?? ""} size={18} />}>
+          <Field label="Which machine?" hint={selected ? `${selected.type}${selected.location ? ` · ${selected.location}` : ""}` : undefined}>
+            <Select value={machineId} onChange={(e) => setMachineId(e.target.value)} required>
+              <option value="">Select a machine…</option>
+              {machines.data?.items.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.asset_code} — {m.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          {machines.data?.items.length === 0 && (
+            <p className="mt-3 text-sm text-ink-mute">
+              No machines yet.{" "}
+              <button className="text-plasma underline" onClick={() => navigate("/machines")}>
+                Add one first
+              </button>
+              .
+            </p>
+          )}
+        </Panel>
+
+        <Panel
+          title="2 · Capture"
+          icon={<MicIcon size={18} />}
+          actions={
+            mode !== "type" && (
+              <Select aria-label="Spoken language" value={lang} onChange={(e) => setLang(e.target.value)} className="!h-8 !w-auto !py-0 text-xs">
+                {LANGS.map((l) => (
+                  <option key={l.v} value={l.v}>
+                    {l.l}
+                  </option>
+                ))}
+              </Select>
+            )
+          }
+        >
+          <div className="mb-5 grid grid-cols-3 gap-2" role="tablist">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={mode === id}
+                onClick={() => {
+                  setMode(id);
+                  setFile(null);
+                }}
+                className={`group flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition ${
+                  mode === id ? "border-ember/60 bg-ember/10 text-ember glow-ember" : "border-line text-ink-dim hover:border-line-bright hover:text-ink"
+                }`}
+              >
+                <Icon size={17} /> {label}
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div key={mode} initial={{ opacity: 0, rotateY: -12 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: 12 }} transition={{ duration: 0.25 }}>
+              {mode === "record" && <Recorder onRecorded={setFile} disabled={submit.isPending} />}
+              {mode === "upload" && (
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDrag(true);
+                  }}
+                  onDragLeave={() => setDrag(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDrag(false);
+                    setFile(e.dataTransfer.files[0] ?? null);
+                  }}
+                  onClick={() => fileInput.current?.click()}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInput.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  className={`group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition ${
+                    drag ? "border-plasma bg-plasma/10" : "border-line hover:border-plasma/60"
+                  }`}
+                >
+                  <UploadIcon size={40} className="text-plasma transition group-hover:-translate-y-1" />
+                  {file ? (
+                    <div>
+                      <div className="font-semibold">{file.name}</div>
+                      <div className="text-xs text-ink-mute">{fileSize(file.size)}</div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-ink-dim">Drop a recording here or click to choose</div>
+                  )}
+                  <div className="text-xs text-ink-mute">
+                    {integrations.data
+                      ? `${integrations.data.audio.accepted_formats.join(", ").toUpperCase()} · up to ${integrations.data.audio.max_seconds}s · ${fileSize(integrations.data.audio.max_bytes)}`
+                      : "WAV, MP3, OGG, FLAC, AAC, M4A, WEBM"}
+                  </div>
+                  <input ref={fileInput} type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                </div>
+              )}
+              {mode === "type" && (
+                <Field label="Describe the fault" hint="Used when recording isn't possible. Saved as a manual transcript, not a Prisma one.">
+                  <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder="Motor M-104 vibrating more than usual, housing hot. Checked belt tension, fine…" />
+                </Field>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </Panel>
+
+        {submit.error && <ErrorBox error={submit.error} />}
+        <div className="flex flex-col items-center gap-3">
+          <Button3D variant="ember" size="lg" disabled={!ready} loading={submit.isPending} onClick={() => submit.mutate()} icon={<MicIcon size={18} />}>
+            {mode === "type" ? "Create incident" : "Submit voice note"}
+          </Button3D>
+          {mode !== "type" && prisma && (
+            <p className="text-center text-xs text-ink-mute">
+              {prisma.mode === "live"
+                ? "Audio is transcribed by Gnani Prisma (live). It is sent to Gnani for processing."
+                : "Prisma is in MOCK mode: the transcript will be a labelled local fixture."}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

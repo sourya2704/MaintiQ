@@ -233,7 +233,7 @@ def mock_extract(transcript: str) -> IncidentDraft:
         missing.append("When the issue started")
 
     return IncidentDraft(
-        incident_summary=(sents[0] if sents else "Technician report")[:300],
+        incident_summary=(next((x for x in sents if tag_symptoms(x)), sents[0] if sents else "Technician report"))[:300],
         symptoms=symptoms,
         observations=observations,
         actions_already_taken=actions,

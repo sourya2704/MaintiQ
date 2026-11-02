@@ -1,0 +1,51 @@
+import { lazy, Suspense, type ReactNode } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import AppShell from "./components/layout/AppShell";
+import { Loader } from "./components/ui/Loader";
+import { useAuth } from "./lib/auth";
+
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Machines = lazy(() => import("./pages/Machines"));
+const MachineDetail = lazy(() => import("./pages/MachineDetail"));
+const NewIncident = lazy(() => import("./pages/NewIncident"));
+const Incidents = lazy(() => import("./pages/Incidents"));
+const IncidentDetail = lazy(() => import("./pages/IncidentDetail"));
+const MemorySearch = lazy(() => import("./pages/MemorySearch"));
+const Settings = lazy(() => import("./pages/Settings"));
+
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <Loader label="Authenticating" />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  return children;
+}
+
+export default function App() {
+  const { user } = useAuth();
+  return (
+    <Suspense fallback={<Loader />}>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route
+          element={
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="machines" element={<Machines />} />
+          <Route path="machines/:id" element={<MachineDetail />} />
+          <Route path="report" element={<NewIncident />} />
+          <Route path="incidents" element={<Incidents />} />
+          <Route path="incidents/:id" element={<IncidentDetail />} />
+          <Route path="memory" element={<MemorySearch />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}

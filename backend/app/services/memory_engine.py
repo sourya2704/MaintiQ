@@ -26,6 +26,8 @@ STOPWORDS = {
     "just", "like", "been", "being", "after", "before", "again", "today", "yesterday", "now", "when", "what", "which",
     "machine", "issue", "problem", "noticed", "seems", "looks", "looked", "feel", "feels", "felt", "think", "usual",
     "normal", "than", "our", "his", "her", "they", "them", "you", "your", "mock", "prisma", "transcript",
+    "maybe", "might", "probably", "possibly", "check", "checked", "checking", "please", "ravi", "line", "start",
+    "started", "time", "last", "again", "going", "got", "get", "need", "needs", "will", "would", "could", "should",
 }
 NO_CONTENT_STATES = (ProcessingStatus.uploaded, ProcessingStatus.transcribing, ProcessingStatus.transcription_failed)
 MIN_CROSS_TYPE_TEXT_RANK = 0.05
@@ -127,7 +129,7 @@ def find_related(db: Session, q: MemoryQuery) -> list[dict]:
             rationale.append(f"Same machine ({machine.asset_code})")
         elif same_type:
             rationale.append(f"Same machine type ({machine.type})")
-        else:
+        elif q.machine_id is not None or q.machine_type is not None:
             rationale.append(f"Different machine type ({machine.type}); ranked lower")
         if shared:
             rationale.append("Shared symptom: " + ", ".join(s.replace("_", " ") for s in shared))
