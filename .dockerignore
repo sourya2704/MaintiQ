@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+backend/.env
+backend/storage
+backend/tests
+backend/demo_audio
+.pgdata
+.claude
+.git
+docs

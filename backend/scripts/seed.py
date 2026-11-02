@@ -14,6 +14,7 @@ from datetime import timedelta
 
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.db.base import utcnow
 from app.db.session import SessionLocal
 from app.core.security import hash_password
@@ -92,6 +93,9 @@ INCIDENTS = [
 
 
 def seed(reset: bool = False) -> None:
+    if get_settings().environment == "production" and not os.environ.get("SEED_PASSWORD"):
+        print("Skipping demo seed: set SEED_PASSWORD (the default demo password is public in the repository).")
+        return
     with SessionLocal() as db:
         org = db.scalar(select(Organization).where(Organization.name == ORG_NAME))
         if org and not reset:

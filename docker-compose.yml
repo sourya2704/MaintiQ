@@ -1,7 +1,8 @@
-# Local stack: PostgreSQL + Mantiq API.
+# Local stack: PostgreSQL + Mantiq (API and web app on http://localhost:8000).
 #   cp backend/.env.example backend/.env   (add GNANI_API_KEY etc.)
 #   docker compose up --build
 #   docker compose exec api python -m scripts.seed   # optional fictional demo data
+#   open http://localhost:8000
 services:
   db:
     image: postgres:16-alpine
@@ -17,11 +18,12 @@ services:
       retries: 10
 
   api:
-    build: ./backend
+    build: .
     env_file: ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://mantiq:mantiq@db:5432/mantiq
       STORAGE_DIR: /app/storage
+      ENVIRONMENT: development
     ports:
       - "8000:8000"
     volumes:

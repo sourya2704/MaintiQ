@@ -1,0 +1,48 @@
+# Render Blueprint: render.com → New → Blueprint → select this repository.
+# You will be prompted for the values marked `sync: false`.
+services:
+  - type: web
+    name: mantiq
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter            # a persistent disk needs a paid instance
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: audio
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mantiq-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENVIRONMENT
+        value: production
+      - key: GNANI_API_KEY
+        sync: false          # your Gnani key (Prisma + Timbre)
+      - key: PRISMA_MODE
+        value: live
+      - key: PRISMA_LANGUAGE_CODE
+        value: en-IN
+      - key: TIMBRE_MODE
+        value: live
+      - key: EVON_MODE
+        value: mock          # switch to live once you have an Evon endpoint
+      - key: EVON_BASE_URL
+        sync: false
+      - key: EVON_API_KEY
+        sync: false
+      - key: SEED_DEMO
+        value: "true"        # creates the fictional demo plant on first start
+      - key: SEED_PASSWORD
+        sync: false          # choose a password for the demo accounts
+
+databases:
+  - name: mantiq-db
+    databaseName: mantiq
+    user: mantiq
+    plan: free

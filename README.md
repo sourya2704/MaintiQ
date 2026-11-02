@@ -28,7 +28,16 @@ npm install
 npm run dev      # http://localhost:5173 (proxies /api to :8000)
 ```
 
-## Backend quick start (Docker)
+## Deploy to Render
+The repo contains a `render.yaml` Blueprint and a root `Dockerfile`. They build a single service: the API also serves the web app. It comes with a managed Postgres database and a 1 GB disk for audio.
+1. Go to render.com and choose **New → Blueprint**, then pick this repository.
+2. Fill in the prompted values:
+   - `GNANI_API_KEY`;
+   - `SEED_PASSWORD` (a password of your choice for the fictional demo accounts);
+   - optionally `EVON_BASE_URL` and `EVON_API_KEY`.
+3. Deploy. On every start, migrations run automatically. The demo plant is created on first start, and only if `SEED_PASSWORD` is set.
+
+## Run everything locally with Docker
 ```bash
 cp backend/.env.example backend/.env    # add GNANI_API_KEY, set modes to live
 docker compose up --build

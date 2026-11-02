@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ProviderMode = Literal["live", "mock", "disabled"]
@@ -15,6 +15,17 @@ class Settings(BaseSettings):
     environment: str = "development"
     database_url: str = "postgresql+psycopg://mantiq:mantiq@localhost:5432/mantiq"
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])
+    # Built frontend (Vite dist) to serve from the API in single-service deployments.
+    static_dir: Path | None = None
+
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, v: str) -> str:
+        # Hosting platforms hand out postgres:// or postgresql:// URLs; SQLAlchemy needs the driver named.
+        for prefix in ("postgres://", "postgresql://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     # Auth
     jwt_secret: str = "change-me-in-production"

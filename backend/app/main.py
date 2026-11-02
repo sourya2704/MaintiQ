@@ -4,10 +4,14 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import auth, dashboard, incidents, machines, memory, settings, users
 from app.core.config import get_settings
@@ -74,7 +78,25 @@ def create_app() -> FastAPI:
         return {"status": "ok" if db_ok else "degraded", "database": db_ok,
                 "providers": {"prisma": s.prisma_mode, "evon": s.evon_mode, "timbre": s.timbre_mode}}
 
+    if s.static_dir and (Path(s.static_dir) / "index.html").is_file():
+        mount_frontend(app, Path(s.static_dir))
     return app
+
+
+def mount_frontend(app: FastAPI, static_dir: Path) -> None:
+    """Serve the built single-page app; unknown non-API paths fall back to index.html for client routing."""
+    root = static_dir.resolve()
+    if (root / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=root / "assets"), name="assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def spa(path: str):
+        if path == "api" or path.startswith("api/"):
+            raise StarletteHTTPException(status_code=404, detail="Not Found")
+        candidate = (root / path).resolve()
+        if path and candidate.is_file() and root in candidate.parents:
+            return FileResponse(candidate)
+        return FileResponse(root / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 app = create_app()
