@@ -107,7 +107,7 @@ def test_idempotent_create_does_not_duplicate(client, auth):
     (b"", "empty.wav", "empty_audio"),
     (b"not really audio at all", "note.wav", "unsupported_audio"),
     (wav_bytes(), "note.exe", "unsupported_audio"),
-    (wav_bytes(31), "long.wav", "audio_too_long"),
+    (wav_bytes(121), "long.wav", "audio_too_long"),
 ])
 def test_invalid_audio_rejected_before_provider(client, auth, data, filename, code):
     m = make_machine(client, auth)

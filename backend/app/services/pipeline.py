@@ -170,7 +170,17 @@ def run_transcription(incident_id: uuid.UUID, job_id: uuid.UUID) -> None:
         try:
             if audio is None:
                 raise ProviderError("no_audio", "Audio is no longer available")
-            result = prisma.transcribe(storage.resolve(audio.storage_key), audio.mime_type, incident.transcript_language)
+            m = incident.machine
+            result = prisma.transcribe_recording(
+                storage.resolve(audio.storage_key),
+                audio.mime_type,
+                incident.transcript_language,
+                duration_seconds=audio.duration_seconds,
+                keyterms=prisma.build_keyterms({
+                    "asset_code": m.asset_code, "name": m.name, "type": m.type,
+                    "manufacturer": m.manufacturer, "model": m.model,
+                }),
+            )
         except ProviderError as exc:
             log.warning("prisma failed incident=%s code=%s", incident_id, exc.code)
             _finish(job, error=exc)

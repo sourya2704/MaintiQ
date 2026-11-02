@@ -25,8 +25,9 @@ class Settings(BaseSettings):
     # Audio storage and retention
     storage_dir: Path = Path("storage")
     max_audio_bytes: int = 10 * 1024 * 1024
-    max_audio_seconds: float = 30.0  # Prisma REST limit
+    max_audio_seconds: float = 120.0  # longer notes are split into Prisma-sized chunks
     audio_retention_days: int = 30
+    retention_interval_minutes: int = 60  # 0 disables the in-process retention sweep
 
     # Gnani Prisma (speech-to-text) - https://docs.gnani.ai
     prisma_mode: ProviderMode = "mock"
@@ -35,6 +36,9 @@ class Settings(BaseSettings):
     prisma_model: str = "prisma-v3.0"
     prisma_language_code: str = "en-IN"
     prisma_timeout_seconds: float = 30.0
+    prisma_max_clip_seconds: float = 30.0  # Prisma REST limit per request
+    prisma_chunk_seconds: float = 28.0
+    prisma_use_keyterms: bool = True  # Prisma v3.0 biasing with machine vocabulary
 
     # Gnani Evon (reasoning) - OpenAI-compatible chat completions route
     evon_mode: ProviderMode = "mock"

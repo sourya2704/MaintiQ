@@ -6,3 +6,4 @@ __pycache__/
 storage/
 node_modules/
 dist/
+.pgdata/

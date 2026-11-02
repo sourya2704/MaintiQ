@@ -8,7 +8,7 @@ import re
 
 SYMPTOM_TAXONOMY: dict[str, tuple[str, ...]] = {
     "vibration": ("vibrat", "shak", "wobbl", "oscillat", "imbalance", "unbalance"),
-    "overheating": ("overheat", "hot", "heat", "temperature", "thermal", "warm"),
+    "overheating": ("overheat", "hot", "heat", "temperature", "thermal trip", "thermal overload", "warm"),
     "abnormal_noise": ("noise", "noisy", "grind", "squeal", "squeak", "knock", "rattl", "hum", "whine", "clunk", "screech"),
     "leak": ("leak", "drip", "seep", "spill"),
     "smoke_or_burning": ("smoke", "burning", "burnt", "scorch", "fumes"),
@@ -32,15 +32,29 @@ SAFETY_NOTICE = (
 )
 
 
+NEGATION = re.compile(r"\b(no|not|without|never|nor|none|isn't|wasn't|aren't|weren't|don't|didn't|doesn't)\b")
+CLAUSE_BREAK = re.compile(r"[.;:!?,]|\b(but|however|although|though|and then)\b")
+
+
+def _affirmed(needle: str, text: str) -> bool:
+    """True if `needle` occurs at least once without a negation earlier in the same clause.
+
+    "There is no smoke" -> False; "no leak, but heavy smoke" -> True.
+    """
+    for m in re.finditer(r"\b" + re.escape(needle), text):
+        window = text[max(0, m.start() - 40) : m.start()]
+        breaks = list(CLAUSE_BREAK.finditer(window))
+        clause = window[breaks[-1].end() :] if breaks else window
+        if not NEGATION.search(clause):
+            return True
+    return False
+
+
 def tag_symptoms(*texts: str) -> list[str]:
     blob = " ".join(t for t in texts if t).lower()
-    tags = []
-    for tag, needles in SYMPTOM_TAXONOMY.items():
-        if any(re.search(r"\b" + re.escape(n), blob) for n in needles):
-            tags.append(tag)
-    return tags
+    return [tag for tag, needles in SYMPTOM_TAXONOMY.items() if any(_affirmed(n, blob) for n in needles)]
 
 
 def detect_hazard(text: str) -> bool:
     lowered = (text or "").lower()
-    return any(re.search(r"\b" + re.escape(term), lowered) for term in HAZARD_TERMS)
+    return any(_affirmed(term, lowered) for term in HAZARD_TERMS)

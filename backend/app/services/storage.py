@@ -74,8 +74,12 @@ def _probe_duration(path: Path) -> float | None:
     if path.suffix == ".wav":
         try:
             with wave.open(str(path), "rb") as w:
-                return w.getnframes() / float(w.getframerate())
-        except (wave.Error, EOFError):
+                frame_bytes = w.getsampwidth() * w.getnchannels()
+                # Streamed WAVs (e.g. TTS output) carry a placeholder frame count;
+                # never trust a header claiming more frames than the file holds.
+                frames_in_file = max(path.stat().st_size - 44, 0) // frame_bytes
+                return min(w.getnframes(), frames_in_file) / float(w.getframerate())
+        except (wave.Error, EOFError, ZeroDivisionError):
             pass
     if shutil.which("ffprobe"):
         try:
@@ -131,11 +135,11 @@ def save_audio(organization_id: uuid.UUID, filename: str, content: bytes) -> Sto
     if ext in CONVERT_TO_WAV:
         path = _convert_to_wav(path)
     duration = _probe_duration(path)
-    if duration is not None and duration > settings.max_audio_seconds:
+    limit = settings.max_audio_seconds if shutil.which("ffmpeg") else settings.prisma_max_clip_seconds
+    if duration is not None and duration > limit:
         path.unlink(missing_ok=True)
         raise AppError(
-            400, "audio_too_long",
-            f"Recording is {duration:.1f}s; Prisma accepts up to {settings.max_audio_seconds:.0f}s per clip",
+            400, "audio_too_long", f"Recording is {duration:.1f}s; the maximum is {limit:.0f}s per voice note",
         )
     if duration is not None and duration < 0.1:
         path.unlink(missing_ok=True)

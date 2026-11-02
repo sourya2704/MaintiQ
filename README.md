@@ -6,6 +6,8 @@ The **Failure Memory Engine** then retrieves related past incidents and their ve
 
 > Decision support only. Mantiq never diagnoses, controls equipment or authorizes repairs.
 
+Docs: [PRD](docs/PRD.md) · [High-Level Design](docs/HLD.md)
+
 ## Status
 - [x] Backend API (FastAPI + PostgreSQL): `backend/`
 - [ ] Frontend (React)
