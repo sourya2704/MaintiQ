@@ -29,7 +29,9 @@ npm run dev      # http://localhost:5173 (proxies /api to :8000)
 ```
 
 ## Deploy to Render
-The repo contains a `render.yaml` Blueprint and a root `Dockerfile`. They build a single service: the API also serves the web app. It comes with a managed Postgres database and a 1 GB disk for audio.
+The repo contains a `render.yaml` Blueprint and a root `Dockerfile`. They build a single service: the API also serves the web app. It comes with a managed Postgres database.
+
+The blueprint uses Render's **free plan**: no card is needed, the service sleeps when idle, and uploaded audio lasts until the next restart. For durable audio storage, switch to the Starter plan and add a disk (see the comment in `render.yaml`).
 1. Go to render.com and choose **New → Blueprint**, then pick this repository.
 2. Fill in the prompted values:
    - `GNANI_API_KEY`;

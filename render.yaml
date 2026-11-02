@@ -6,13 +6,13 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    plan: starter            # a persistent disk needs a paid instance
+    # Free plan: no card needed. It sleeps after 15 min idle, and with no disk uploaded audio
+    # lasts until the next restart (transcripts and incidents live in Postgres).
+    # For durable audio: set plan to starter and add
+    #   disk: { name: audio, mountPath: /app/storage, sizeGB: 1 }
+    plan: free
     healthCheckPath: /api/health
     autoDeploy: true
-    disk:
-      name: audio
-      mountPath: /app/storage
-      sizeGB: 1
     envVars:
       - key: DATABASE_URL
         fromDatabase:
