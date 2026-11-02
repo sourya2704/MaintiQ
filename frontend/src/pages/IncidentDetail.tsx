@@ -22,6 +22,7 @@ import {
   WaveIcon,
   WrenchIcon,
 } from "../components/icons/MachineIcons";
+import { GuidePanel } from "../components/incident/GuidePanel";
 import { AudioPlayer, ListBlock, OutcomeForm, PipelineStepper, RelatedList } from "../components/incident/parts";
 import { Button3D } from "../components/ui/Button3D";
 import { ConfirmDialog, ErrorBox, Panel, Pill, Select, StatusPill, SymptomChip, Textarea, errorText, useToast } from "../components/ui/kit";
@@ -60,7 +61,10 @@ export default function IncidentDetail() {
   const q = useQuery({
     queryKey: ["incident", id],
     queryFn: () => api.get<Inc>(`/api/incidents/${id}`),
-    refetchInterval: (query) => (query.state.data && PROCESSING_ACTIVE.includes(query.state.data.processing_status) ? 1500 : false),
+    refetchInterval: (query) => {
+      const d = query.state.data;
+      return d && (PROCESSING_ACTIVE.includes(d.processing_status) || d.guide_generating) ? 1500 : false;
+    },
   });
   const inc = q.data;
   const related = useQuery({
@@ -102,6 +106,7 @@ export default function IncidentDetail() {
 
   const patch = useMutation({ mutationFn: (body: Partial<Draft> & { transcript_edited?: string }) => api.patch<Inc>(`/api/incidents/${id}`, body), onSuccess: refresh, onError: onErr });
   const analyze = useMutation({ mutationFn: () => api.post(`/api/incidents/${id}/analyze`), onSuccess: () => refresh(), onError: onErr });
+  const troubleshoot = useMutation({ mutationFn: () => api.post(`/api/incidents/${id}/troubleshoot`), onSuccess: () => refresh(), onError: onErr });
   const retranscribe = useMutation({ mutationFn: () => api.post(`/api/incidents/${id}/transcribe`), onSuccess: () => refresh(), onError: onErr });
   const confirm = useMutation({
     mutationFn: () => api.post<Inc>(`/api/incidents/${id}/confirm`),
@@ -453,6 +458,7 @@ export default function IncidentDetail() {
         </div>
 
         <div className="space-y-6">
+          <GuidePanel inc={inc} onGenerate={() => troubleshoot.mutate()} busy={troubleshoot.isPending} />
           <Panel title="Failure memory" icon={<MemoryIcon size={18} />} tag={<span className="text-[11px] text-ink-mute">related past incidents</span>}>
             {transcript ? (
               <RelatedList data={related.data} loading={related.isLoading} error={related.error} />

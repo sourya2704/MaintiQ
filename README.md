@@ -57,6 +57,21 @@ Demo logins (fictional): `admin@`, `supervisor@` and `tech@demo-mantiq.example.c
 - a 34-second note
 - a Hindi note
 
+## AI troubleshooting guide (Gnani Evon)
+For any incident, Evon proposes an **advisory** guide. It is grounded in the report and in this plant's own verified past fixes:
+- **Likely causes:** ranked as higher, possible or less likely (never as percentages), with evidence for each. Causes that match a previously **verified** fix link to that incident.
+- **Checks in order:** a safe order that always starts with lockout. Each check says why it matters and what you would expect to find.
+- **Parts to have on hand**, **when to stop and escalate**, and **what not to do**.
+
+Before anything is shown, the backend checks every history citation, removes unsafe advice and forces hazard escalation. The guide is never a diagnosis: the technician records the verified cause in the outcome.
+
+## Importing machines
+Supervisors and admins can upload an asset list as CSV under **Machines → Import CSV**:
+- **Columns:** asset code, name and type are required; manufacturer, model, location and status are optional. Common header names such as `Asset No`, `Equipment`, `Category` and `Make` are recognised.
+- **Excel files:** semicolon-separated files and files with a byte-order mark are handled.
+- **Preview first:** a dry run reports new, updated, skipped and error rows before anything is saved.
+- **Existing asset codes:** either skipped or updated, your choice.
+
 ## Speech features
 - **Long voice notes:** up to 120 s. Recordings over Prisma's 30 s limit are split with ffmpeg, and each chunk carries the previous chunk's text as `previous_text`.
 - **Keyterms:** the machine's asset code, name and model, plus maintenance vocabulary, are sent as Prisma v3.0 `keyterms`.
@@ -83,9 +98,9 @@ Mock output is always labelled (`prisma_mock`, `evon_mock`) in the record, the j
 |---|---|
 | Auth | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/change-password` |
 | Users | `GET/POST /api/users`, `PATCH /api/users/{id}` |
-| Machines | `GET/POST /api/machines`, `GET/PATCH/DELETE /api/machines/{id}`, `GET /api/machines/types` |
+| Machines | `GET/POST /api/machines`, `GET/PATCH/DELETE /api/machines/{id}`, `GET /api/machines/types`, `POST /api/machines/import` (CSV, dry run first), `GET /api/machines/import/template` |
 | Incidents | `POST /api/incidents` (audio or manual transcript), `GET /api/incidents` (search/filter), `GET/PATCH/DELETE /api/incidents/{id}` |
-| Pipeline | `POST /{id}/transcribe`, `POST /{id}/analyze`, `POST /{id}/confirm`, `GET /{id}/jobs` |
+| Pipeline | `POST /{id}/transcribe`, `POST /{id}/analyze`, `POST /{id}/troubleshoot`, `POST /{id}/confirm`, `GET /{id}/jobs` |
 | Memory | `GET /api/incidents/{id}/related`, `GET /api/memory/search` |
 | Outcomes | `POST /{id}/outcome`, `GET /{id}/outcomes` |
 | Other | `GET /{id}/audit`, `GET/DELETE /{id}/audio/{audio_id}`, `GET /{id}/export`, `POST /{id}/speak` |

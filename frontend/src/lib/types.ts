@@ -125,6 +125,7 @@ export interface AudioAsset {
 export interface Job {
   id: string;
   provider: "prisma" | "evon" | "timbre";
+  task: "transcription" | "extraction" | "troubleshooting" | "speech";
   model: string;
   mode: "live" | "mock" | "disabled";
   status: "running" | "succeeded" | "failed";
@@ -155,6 +156,10 @@ export interface IncidentDetail extends IncidentListItem {
   outcomes: Outcome[];
   audio_assets: AudioAsset[];
   jobs: Job[];
+  guide: TroubleshootingGuide | null;
+  guide_source: string | null;
+  guide_generated_at: string | null;
+  guide_generating: boolean;
   provenance: {
     transcript: string;
     structured_fields: string;
@@ -248,4 +253,35 @@ export interface IntegrationStatus {
   providers: ProviderStatus[];
   audio: { max_bytes: number; max_seconds: number; retention_days: number; accepted_formats: string[] };
   privacy_notice: string;
+}
+
+export interface GuideHistoryRef {
+  ref: string;
+  incident_id: string;
+  asset_code: string;
+  date: string;
+  verified_cause: string | null;
+  resolution_status: ResolutionStatus | null;
+}
+
+export interface TroubleshootingGuide {
+  summary: string;
+  likely_causes: { cause: string; likelihood: "higher" | "possible" | "less likely"; evidence: string[]; history: GuideHistoryRef[] }[];
+  steps: { order: number; action: string; why: string; expected_finding: string; safety: string | null }[];
+  parts_to_have: string[];
+  escalate_if: string[];
+  do_not: string[];
+  confidence_notes: string;
+  warnings: string[];
+  disclaimer: string;
+}
+
+export interface ImportReport {
+  total_rows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: { line: number; asset_code: string | null; message: string }[];
+  unknown_columns: string[];
+  dry_run: boolean;
 }

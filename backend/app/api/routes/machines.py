@@ -1,7 +1,10 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from typing import Literal
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -20,7 +23,7 @@ from app.schemas.machines import (
     SymptomCount,
     TimelineEntry,
 )
-from app.services import audit
+from app.services import audit, machine_import
 
 router = APIRouter(prefix="/api/machines", tags=["machines"])
 
@@ -79,6 +82,34 @@ def machine_types(db: DB, user: CurrentUser):
     return db.scalars(
         select(Machine.type).where(Machine.organization_id == user.organization_id).distinct().order_by(Machine.type)
     ).all()
+
+
+@router.get("/import/template", response_class=PlainTextResponse)
+def import_template(_: CurrentUser):
+    """Example CSV with the recognised columns."""
+    return PlainTextResponse(
+        machine_import.TEMPLATE, media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="mantiq-machines-template.csv"'},
+    )
+
+
+@router.post("/import")
+async def import_machines(
+    db: DB,
+    user: Lead,
+    file: UploadFile = File(...),
+    dry_run: bool = Query(default=True, description="Validate and report without saving"),
+    on_conflict: Literal["skip", "update"] = Query(default="skip", description="What to do with asset codes that already exist"),
+):
+    """Bulk-create machines from a CSV asset list. Run with dry_run=true first to preview."""
+    report = machine_import.import_machines(
+        db, user.organization_id, user.id, await file.read(), on_conflict=on_conflict, dry_run=dry_run,
+    )
+    if dry_run:
+        db.rollback()
+    else:
+        db.commit()
+    return report.__dict__
 
 
 @router.post("", response_model=MachineOut, status_code=status.HTTP_201_CREATED)

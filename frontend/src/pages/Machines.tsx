@@ -2,7 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FactoryIcon, MachineTypeIcon, PlusIcon, SearchBoltIcon } from "../components/icons/MachineIcons";
+import { FactoryIcon, MachineTypeIcon, PlusIcon, SearchBoltIcon, UploadIcon } from "../components/icons/MachineIcons";
+import { MachineImport } from "../components/MachineImport";
+import { useAuth } from "../lib/auth";
 import { PageHeader } from "../components/layout/AppShell";
 import { MachineForm, type MachineInput } from "../components/MachineForm";
 import { Button3D } from "../components/ui/Button3D";
@@ -21,6 +23,8 @@ export default function Machines() {
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const { can } = useAuth();
 
   const types = useQuery({ queryKey: ["machine-types"], queryFn: () => api.get<string[]>("/api/machines/types") });
   const list = useQuery({
@@ -47,13 +51,27 @@ export default function Machines() {
         title="Machines"
         icon={<FactoryIcon size={28} />}
         actions={
-          <Button3D variant="primary" icon={<PlusIcon size={16} />} onClick={() => setAdding((a) => !a)}>
-            Add machine
-          </Button3D>
+          <>
+            {can("admin", "supervisor") && (
+              <Button3D variant="neutral" icon={<UploadIcon size={16} />} onClick={() => { setImporting((v) => !v); setAdding(false); }}>
+                Import CSV
+              </Button3D>
+            )}
+            <Button3D variant="primary" icon={<PlusIcon size={16} />} onClick={() => { setAdding((a) => !a); setImporting(false); }}>
+              Add machine
+            </Button3D>
+          </>
         }
       />
 
       <AnimatePresence>
+        {importing && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
+            <Panel title="Import machines from CSV" icon={<UploadIcon size={18} />}>
+              <MachineImport onDone={() => setImporting(false)} />
+            </Panel>
+          </motion.div>
+        )}
         {adding && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
             <Panel title="Commission a machine" icon={<PlusIcon size={18} />}>

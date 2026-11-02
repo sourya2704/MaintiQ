@@ -65,9 +65,13 @@ def refresh_search_text(incident: Incident) -> None:
 # --------------------------------------------------------------------------- guards
 
 
+PIPELINE_TASKS = {"prisma": "transcription", "evon": "extraction"}
+
+
 def _active_job(incident: Incident, provider: str) -> AIProcessingJob | None:
+    task = PIPELINE_TASKS.get(provider)
     for job in reversed(incident.jobs):
-        if job.provider == provider and job.status == JobStatus.running:
+        if job.provider == provider and job.task == task and job.status == JobStatus.running:
             return job
     return None
 
@@ -98,6 +102,7 @@ def begin_transcription(db: Session, incident: Incident, actor_id: uuid.UUID | N
     job = AIProcessingJob(
         incident_id=incident.id,
         provider="prisma",
+        task="transcription",
         model=settings.prisma_model if settings.prisma_mode == "live" else "prisma-mock",
         mode=settings.prisma_mode,
     )
@@ -128,6 +133,7 @@ def begin_analysis(db: Session, incident: Incident, actor_id: uuid.UUID | None) 
     job = AIProcessingJob(
         incident_id=incident.id,
         provider="evon",
+        task="extraction",
         model=settings.evon_model if settings.evon_mode == "live" else "evon-mock",
         mode=settings.evon_mode,
     )

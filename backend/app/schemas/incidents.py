@@ -56,6 +56,7 @@ class AudioOut(ORM):
 class JobOut(ORM):
     id: uuid.UUID
     provider: str
+    task: str
     model: str
     mode: str
     status: str
@@ -169,6 +170,10 @@ class IncidentDetail(IncidentListItem):
     outcomes: list[OutcomeOut]
     audio_assets: list[AudioOut]
     jobs: list[JobOut]
+    guide: dict[str, Any] | None
+    guide_source: AnalysisSource | None
+    guide_generated_at: datetime | None
+    guide_generating: bool = False
     provenance: FieldProvenance | None = None
 
 

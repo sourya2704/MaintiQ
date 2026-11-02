@@ -113,6 +113,11 @@ class Incident(UUIDPk, Timestamps, Base):
     analysis_warnings: Mapped[list[str]] = mapped_column(TextList, default=list, nullable=False)
     analysis_source: Mapped[str | None] = mapped_column(String(20))
 
+    # Advisory troubleshooting guide (Evon), kept apart from the reviewed incident fields.
+    guide: Mapped[dict | None] = mapped_column(JSONB)
+    guide_source: Mapped[str | None] = mapped_column(String(20))
+    guide_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     processing_status: Mapped[str] = mapped_column(
         String(30), default=ProcessingStatus.uploaded, index=True, nullable=False
     )
@@ -195,6 +200,7 @@ class AIProcessingJob(UUIDPk, Base):
         ForeignKey("incidents.id", ondelete="CASCADE"), index=True, nullable=False
     )
     provider: Mapped[str] = mapped_column(String(20), nullable=False)  # prisma | evon | timbre
+    task: Mapped[str] = mapped_column(String(30), default="extraction", nullable=False)  # transcription | extraction | troubleshooting | speech
     model: Mapped[str] = mapped_column(String(200), nullable=False)
     mode: Mapped[str] = mapped_column(String(10), nullable=False)  # live | mock
     status: Mapped[str] = mapped_column(String(20), default=JobStatus.running, nullable=False)
