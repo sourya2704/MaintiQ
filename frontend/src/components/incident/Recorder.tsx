@@ -60,8 +60,8 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           const v = Math.abs(data[i * step] - 128) / 128;
           const bh = Math.max(2 * devicePixelRatio, v * h * 1.8);
           const grad = g.createLinearGradient(0, h / 2 - bh / 2, 0, h / 2 + bh / 2);
-          grad.addColorStop(0, "#22d3ee");
-          grad.addColorStop(1, "#ff8a1f");
+          grad.addColorStop(0, "#8c6a2f");
+          grad.addColorStop(1, "#a0522d");
           g.fillStyle = grad;
           const bw = w / bars - 2 * devicePixelRatio;
           g.fillRect(i * (w / bars), h / 2 - bh / 2, bw, bh);
@@ -136,14 +136,14 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           [0, 1, 2].map((i) => (
             <span
               key={i}
-              className="absolute inset-4 rounded-full border-2 border-ember/60"
+              className="absolute inset-4 rounded-full border-2 border-rust/40"
               style={{ animation: `pulse-ring 1.8s ${i * 0.6}s ease-out infinite` }}
             />
           ))}
         <motion.span
           aria-hidden
-          className="absolute inset-6 rounded-full bg-ember/20 blur-xl"
-          animate={{ scale: 1 + level * 0.8, opacity: recording ? 0.4 + level : 0.15 }}
+          className="absolute inset-7 rounded-full bg-rust/15"
+          animate={{ scale: 1 + level * 0.5 }}
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
         />
         <motion.button
@@ -151,18 +151,18 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           disabled={disabled || state === "done"}
           onClick={recording ? stop : start}
           aria-label={recording ? "Stop recording" : "Start recording"}
-          whileHover={{ rotateX: 12, scale: 1.04 }}
+          whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.94, y: 6 }}
           className="group relative h-32 w-32 rounded-full disabled:opacity-40"
           style={{ transformStyle: "preserve-3d" }}
         >
-          <span className="absolute inset-0 translate-y-2 rounded-full bg-[#5a2600]" />
+          <span className="absolute inset-0 translate-y-1.5 rounded-full bg-rust-deep" />
           <span
             className={`absolute inset-0 grid place-items-center rounded-full border-2 transition-colors ${
-              recording ? "border-alert/80 bg-gradient-to-b from-[#ff6b81] to-[#c81e3a]" : "border-[#ffc285]/70 bg-gradient-to-b from-[#ffa64d] to-[#e86a00]"
-            } shadow-[inset_0_6px_14px_rgb(255_255_255/0.35),inset_0_-10px_18px_rgb(0_0_0/0.35)]`}
+              recording ? "border-[#7f261d] bg-alert" : "border-rust-deep bg-rust"
+            }`}
           >
-            {recording ? <StopIcon size={44} className="text-white" /> : <MicIcon size={46} className="text-[#1a0d00]" />}
+            {recording ? <StopIcon size={44} className="text-cream" /> : <MicIcon size={46} className="text-cream" />}
           </span>
         </motion.button>
       </div>
@@ -182,7 +182,7 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
       {state === "done" && url && (
         <div className="flex w-full max-w-md items-center gap-3">
           <audio controls src={url} className="h-10 flex-1" />
-          <Button3D size="sm" variant="steel" icon={<RefreshIcon size={14} />} onClick={reset}>
+          <Button3D size="sm" variant="neutral" icon={<RefreshIcon size={14} />} onClick={reset}>
             Redo
           </Button3D>
         </div>

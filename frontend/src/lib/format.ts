@@ -36,7 +36,7 @@ export function timeAgo(iso: string | null | undefined) {
 
 export const humanize = (s: string) => s.replace(/_/g, " ");
 
-type Tone = "ok" | "warn" | "alert" | "plasma" | "ember" | "mute" | "violet";
+type Tone = "ok" | "warn" | "alert" | "brass" | "rust" | "mute" | "taupe";
 
 export const machineStatusTone: Record<MachineStatus, Tone> = {
   operational: "ok",
@@ -46,7 +46,7 @@ export const machineStatusTone: Record<MachineStatus, Tone> = {
 };
 
 export const resolutionTone: Record<ResolutionStatus, Tone> = {
-  open: "ember",
+  open: "rust",
   monitoring: "warn",
   resolved: "ok",
   unresolved: "alert",
@@ -55,16 +55,16 @@ export const resolutionTone: Record<ResolutionStatus, Tone> = {
 export const urgencyTone: Record<Urgency, Tone> = {
   unknown: "mute",
   needs_review: "warn",
-  routine: "plasma",
+  routine: "brass",
   urgent: "alert",
 };
 
 export const processingTone: Record<ProcessingStatus, Tone> = {
   uploaded: "mute",
-  transcribing: "plasma",
+  transcribing: "brass",
   transcription_failed: "alert",
-  transcribed: "plasma",
-  analyzing: "violet",
+  transcribed: "brass",
+  analyzing: "taupe",
   analysis_failed: "alert",
   awaiting_review: "warn",
 };

@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../lib/api";
@@ -54,23 +53,20 @@ export function PipelineStepper({ inc }: { inc: IncidentDetail }) {
       {STAGES.map(({ key, label, icon: Icon }, i) => {
         const st = s[key];
         const color =
-          st === "done" ? "border-ok/60 text-ok" : st === "active" ? "border-plasma/70 text-plasma" : st === "failed" ? "border-alert/70 text-alert" : st === "skipped" ? "border-dashed border-line text-ink-mute" : "border-line text-ink-mute";
+          st === "done" ? "border-ok/60 text-ok" : st === "active" ? "border-brass/70 text-brass" : st === "failed" ? "border-alert/70 text-alert" : st === "skipped" ? "border-dashed border-line text-ink-mute" : "border-line text-ink-mute";
         const spinning = (key === "prisma" && inc.processing_status === "transcribing") || (key === "evon" && inc.processing_status === "analyzing");
         return (
           <li key={key} className="relative flex flex-col items-center gap-2 text-center">
             {i > 0 && (
               <span className={`absolute right-1/2 top-6 -z-0 h-0.5 w-full ${s[STAGES[i - 1].key] === "done" ? "bg-ok/60" : "bg-line"}`} />
             )}
-            <motion.div
-              initial={{ rotateY: 90, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
-              transition={{ delay: i * 0.08 }}
-              className={`relative z-10 grid h-12 w-12 place-items-center rounded-xl border-2 bg-deck ${color} ${
-                st === "active" ? "shadow-[0_0_20px_-2px_currentColor]" : ""
+            <div
+              className={`relative z-10 grid h-12 w-12 place-items-center rounded-xl border-2 bg-sunk ${color} ${
+                st === "active" ? "" : ""
               }`}
             >
               {spinning ? <GearIcon size={22} className="animate-spin" /> : st === "done" ? <CheckIcon size={22} /> : st === "failed" ? <XIcon size={22} /> : <Icon size={22} />}
-            </motion.div>
+            </div>
             <span className={`text-[10px] font-semibold uppercase tracking-wider sm:text-[11px] ${st === "todo" || st === "skipped" ? "text-ink-mute" : "text-ink-dim"}`}>
               {st === "skipped" ? (key === "prisma" ? "Typed (no STT)" : "Skipped") : label}
             </span>
@@ -88,7 +84,7 @@ export function ListBlock({
   items,
   editing,
   onChange,
-  tone = "plasma",
+  tone = "brass",
   empty = "None recorded",
   badge,
 }: {
@@ -96,16 +92,16 @@ export function ListBlock({
   items: string[];
   editing: boolean;
   onChange: (next: string[]) => void;
-  tone?: "plasma" | "ember" | "warn" | "violet" | "ok";
+  tone?: "brass" | "rust" | "warn" | "taupe" | "ok";
   empty?: string;
   badge?: React.ReactNode;
 }) {
   const [draft, setDraft] = useState("");
-  const dot = { plasma: "bg-plasma", ember: "bg-ember", warn: "bg-warn", violet: "bg-violet", ok: "bg-ok" }[tone];
+  const dot = { brass: "bg-brass", rust: "bg-rust", warn: "bg-warn", taupe: "bg-taupe", ok: "bg-ok" }[tone];
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-[0.16em] text-ink-dim">{title}</h3>
+        <h3 className="text-[11px] font-bold uppercase tracking-wide text-ink-dim">{title}</h3>
         {badge}
       </div>
       {items.length === 0 && !editing ? (
@@ -144,7 +140,7 @@ export function ListBlock({
           }}
         >
           <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add item…" className="!h-8" aria-label={`Add to ${title}`} />
-          <Button3D type="submit" size="sm" variant="steel" icon={<PlusIcon size={14} />} aria-label="Add" />
+          <Button3D type="submit" size="sm" variant="neutral" icon={<PlusIcon size={14} />} aria-label="Add" />
         </form>
       )}
     </div>
@@ -158,7 +154,7 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
   if (loading || !data)
     return (
       <div className="flex items-center gap-3 py-6 text-sm text-ink-mute">
-        <MemoryIcon size={22} className="animate-pulse text-plasma" /> Scanning failure memory…
+        <MemoryIcon size={22} className="animate-pulse text-brass" /> Scanning failure memory…
       </div>
     );
   if (data.no_match)
@@ -176,30 +172,23 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
         {data.disclaimer}
       </p>
       <ol className="space-y-3">
-        {data.results.map((r, i) => (
-          <motion.li
-            key={r.incident_id}
-            initial={{ opacity: 0, y: 16, rotateX: -15 }}
-            whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.07 }}
-            style={{ perspective: 800 }}
-          >
+        {data.results.map((r) => (
+          <li key={r.incident_id}>
             <Link
               to={`/incidents/${r.incident_id}`}
-              className="group block rounded-2xl border border-line bg-deck/70 p-4 transition hover:-translate-y-0.5 hover:border-plasma/50 hover:shadow-[0_12px_30px_-12px_rgb(34_211_238/0.35)]"
+              className="group block rounded-xl border border-line bg-sunk/70 p-4 transition hover:-translate-y-0.5 hover:border-brass/50 hover:shadow-md"
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="grid h-7 w-7 place-items-center rounded-md bg-plasma/15 font-display text-xs font-bold text-plasma">#{r.rank}</span>
+                <span className="grid h-7 w-7 place-items-center rounded-md bg-brass/15 font-display text-xs font-bold text-brass">#{r.rank}</span>
                 <MachineTypeIcon type={r.machine.type} size={18} className="text-ink-dim" />
-                <span className="font-mono text-sm font-bold text-ember">{r.machine.asset_code}</span>
+                <span className="font-mono text-sm font-bold text-rust">{r.machine.asset_code}</span>
                 <span className="text-xs capitalize text-ink-mute">{r.machine.type}</span>
                 <span className="ml-auto font-mono text-xs text-ink-mute">{fmtDate(r.occurred_at)}</span>
               </div>
               <p className="mt-2 text-sm text-ink">{r.summary}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {r.rationale.map((why) => (
-                  <span key={why} className="rounded-md border border-plasma/30 bg-plasma/5 px-2 py-0.5 text-[11px] text-plasma">
+                  <span key={why} className="rounded-md border border-brass/30 bg-brass/5 px-2 py-0.5 text-[11px] text-brass">
                     {why}
                   </span>
                 ))}
@@ -225,10 +214,10 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
                   <Pill tone="mute">Outcome unknown/unrecorded</Pill>
                 )}
                 {r.is_seed && <Pill tone="mute">demo data</Pill>}
-                <LinkIcon size={14} className="ml-auto text-ink-mute group-hover:text-plasma" />
+                <LinkIcon size={14} className="ml-auto text-ink-mute group-hover:text-brass" />
               </div>
             </Link>
-          </motion.li>
+          </li>
         ))}
       </ol>
     </div>
@@ -289,7 +278,7 @@ export function OutcomeForm({ onSubmit }: { onSubmit: (body: Record<string, unkn
         </div>
       )}
       <div className="flex justify-end sm:col-span-2">
-        <Button3D type="submit" variant="plasma" loading={busy} icon={<WrenchIcon size={16} />}>
+        <Button3D type="submit" variant="dark" loading={busy} icon={<WrenchIcon size={16} />}>
           Record outcome
         </Button3D>
       </div>

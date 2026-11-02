@@ -8,7 +8,7 @@ import { PageHeader } from "../components/layout/AppShell";
 import type { FloorMachine } from "../components/three/PlantFloor";
 import { Button3D } from "../components/ui/Button3D";
 import { EmptyState, ErrorBox, Panel, Skeleton, Stat } from "../components/ui/kit";
-import { TiltCard } from "../components/ui/TiltCard";
+import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { humanize } from "../lib/format";
@@ -67,14 +67,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* hero */}
-      <section className="glass relative overflow-hidden rounded-3xl">
-        <div className="blueprint absolute inset-0" />
+      <section className="surface relative overflow-hidden rounded-xl">
         <Suspense fallback={null}>
-          <GearTrain className="absolute inset-y-0 right-0 hidden w-[55%] md:block" intensity={0.8} />
+          <GearTrain className="absolute inset-y-0 right-0 hidden w-[45%] md:block" />
         </Suspense>
         <div className="relative max-w-xl p-6 sm:p-8">
-          <div className="font-mono text-[11px] uppercase tracking-[0.3em] text-plasma">Control room</div>
-          <h1 className="mt-2 font-display text-3xl font-extrabold uppercase leading-tight tracking-[0.08em] sm:text-4xl">
+          <div className="font-mono text-[11px] uppercase tracking-wider text-brass">Control room</div>
+          <h1 className="mt-2 font-display text-3xl font-bold uppercase leading-tight tracking-wide sm:text-4xl">
             Hello, {user?.name.split(" ")[0]}
           </h1>
           <p className="mt-3 text-sm text-ink-dim">
@@ -85,10 +84,10 @@ export default function Dashboard() {
               : "Loading plant status…"}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button3D variant="ember" size="lg" icon={<MicIcon size={18} />} onClick={() => navigate("/report")}>
+            <Button3D variant="primary" size="lg" icon={<MicIcon size={18} />} onClick={() => navigate("/report")}>
               Report a fault
             </Button3D>
-            <Button3D variant="steel" size="lg" icon={<MemoryIcon size={18} />} onClick={() => navigate("/memory")}>
+            <Button3D variant="neutral" size="lg" icon={<MemoryIcon size={18} />} onClick={() => navigate("/memory")}>
               Search memory
             </Button3D>
           </div>
@@ -102,16 +101,16 @@ export default function Dashboard() {
         {isLoading || !data
           ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)
           : [
-              { label: "Open incidents", value: data.incidents.open, sub: `${data.incidents.urgent_open} urgent`, tone: "ember" as const, to: "/incidents?resolution_status=open", glow: data.incidents.urgent_open ? ("alert" as const) : undefined },
+              { label: "Open incidents", value: data.incidents.open, sub: `${data.incidents.urgent_open} urgent`, tone: "rust" as const, to: "/incidents?resolution_status=open", glow: data.incidents.urgent_open ? ("alert" as const) : undefined },
               { label: "Awaiting review", value: data.incidents.awaiting_review, sub: "AI drafts to confirm", tone: "warn" as const, to: "/incidents?processing_status=awaiting_review" },
               { label: "Resolved · 30d", value: data.incidents.resolved_last_30_days, sub: `${data.incidents.reported_last_30_days} reported in 30d`, tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
-              { label: "Machines", value: data.machines.total, sub: `${data.machines.by_status.down ?? 0} down · ${data.machines.by_status.degraded ?? 0} degraded`, tone: "plasma" as const, to: "/machines" },
+              { label: "Machines", value: data.machines.total, sub: `${data.machines.by_status.down ?? 0} down · ${data.machines.by_status.degraded ?? 0} degraded`, tone: "brass" as const, to: "/machines" },
             ].map((k, i) => (
-              <TiltCard key={k.label} delay={i * 0.07} onClick={() => navigate(k.to)} glow={k.glow}>
+              <Card key={k.label} delay={i * 0.07} onClick={() => navigate(k.to)} alert={Boolean(k.glow)}>
                 <div className="p-5">
                   <Stat label={k.label} value={k.value} sub={k.sub} tone={k.tone} />
                 </div>
-              </TiltCard>
+              </Card>
             ))}
       </div>
       {data && data.incidents.processing_failed > 0 && (
@@ -129,7 +128,7 @@ export default function Dashboard() {
             icon={<CubeIcon size={26} />}
             actions={<span className="text-xs text-ink-mute">Click a machine to open it</span>}
           />
-          <div className="glass relative min-h-0 flex-1 overflow-hidden rounded-3xl">
+          <div className="surface relative min-h-0 flex-1 overflow-hidden rounded-xl">
             {floor.length ? (
               <Suspense fallback={<Skeleton className="h-full" />}>
                 <PlantFloor machines={floor} onSelect={(id) => navigate(`/machines/${id}`)} trackRef={track} className="absolute inset-0" />
@@ -140,15 +139,15 @@ export default function Dashboard() {
                   icon={<FactoryIcon size={44} />}
                   title="No machines yet"
                   body="Add your first machine to see it on the 3D plant floor."
-                  action={<Button3D variant="plasma" onClick={() => navigate("/machines")}>Add machine</Button3D>}
+                  action={<Button3D variant="dark" onClick={() => navigate("/machines")}>Add machine</Button3D>}
                 />
               </div>
             )}
-            <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-lg bg-void/70 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-ink-dim backdrop-blur">
+            <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-md bg-card/90 px-3 py-1.5 text-xs text-ink-dim">
               <span className="text-ok">● operational</span>
               <span className="text-warn">● degraded</span>
               <span className="text-alert">● down</span>
-              <span>shake = vibration · glow = heat · drops = leak</span>
+              <span>Floor tape shows status · open faults animate the machine</span>
             </div>
           </div>
         </div>
@@ -166,18 +165,18 @@ export default function Dashboard() {
                   <Link to={`/incidents?symptom=${s.tag}`} className="block">
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 capitalize text-ink-dim group-hover:text-ink">
-                        <SymptomIcon tag={s.tag} size={16} className="text-ember" />
+                        <SymptomIcon tag={s.tag} size={16} className="text-rust" />
                         {humanize(s.tag)}
                       </span>
                       <span className="font-mono text-xs text-ink-mute">{s.count}</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-deck">
+                    <div className="h-2 overflow-hidden rounded-full bg-sunk">
                       <motion.div
                         initial={{ width: 0 }}
                         whileInView={{ width: `${(s.count / maxSymptom) * 100}%` }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.9, delay: i * 0.08 }}
-                        className="h-full rounded-full bg-gradient-to-r from-ember-deep to-ember shadow-[0_0_10px_#ff8a1f]"
+                        className="h-full rounded-full bg-rust"
                       />
                     </div>
                   </Link>
@@ -187,7 +186,7 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="Unresolved" icon={<IncidentIcon size={18} />} className="lg:col-span-3" actions={<Link to="/incidents" className="text-xs text-plasma hover:underline">All incidents</Link>}>
+        <Panel title="Unresolved" icon={<IncidentIcon size={18} />} className="lg:col-span-3" actions={<Link to="/incidents" className="text-xs text-brass hover:underline">All incidents</Link>}>
           {!data ? (
             <Skeleton className="h-40" />
           ) : data.unresolved_incidents.length === 0 ? (
@@ -205,7 +204,7 @@ export default function Dashboard() {
           <EmptyState
             title="No incidents yet"
             body="Record a voice note at the machine to create the first incident."
-            action={<Button3D variant="ember" icon={<MicIcon size={16} />} onClick={() => navigate("/report")}>Report a fault</Button3D>}
+            action={<Button3D variant="primary" icon={<MicIcon size={16} />} onClick={() => navigate("/report")}>Report a fault</Button3D>}
           />
         ) : (
           <ul className="-mx-3">{data.recent_incidents.map((inc, i) => <IncidentRow key={inc.id} inc={inc} index={i} />)}</ul>

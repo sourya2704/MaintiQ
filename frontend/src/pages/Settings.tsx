@@ -4,7 +4,7 @@ import { BearingIcon, GearIcon, ShieldIcon, SpeakerIcon, TrashIcon, UsersIcon, W
 import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
 import { ErrorBox, Field, Input, Panel, Pill, Select, Skeleton, errorText, useToast } from "../components/ui/kit";
-import { TiltCard } from "../components/ui/TiltCard";
+import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { fileSize, timeAgo } from "../lib/format";
@@ -19,7 +19,7 @@ function Integrations() {
   const check = useMutation({
     mutationFn: () => api.get<{ reachable: boolean | null; message?: string; latency_ms?: number; models?: string[] }>("/api/settings/integrations/evon/check"),
     onSuccess: (r) =>
-      toast(r.reachable ? "ok" : r.reachable === null ? "plasma" : "alert", r.reachable ? `Evon reachable (${r.latency_ms} ms)` : r.message ?? "Evon unreachable"),
+      toast(r.reachable ? "ok" : r.reachable === null ? "info" : "alert", r.reachable ? `Evon reachable (${r.latency_ms} ms)` : r.message ?? "Evon unreachable"),
     onError: (e) => toast("alert", errorText(e)),
   });
   const retention = useMutation({
@@ -37,12 +37,12 @@ function Integrations() {
           const Icon = PROVIDER_ICON[p.provider];
           const live = p.mode === "live";
           return (
-            <TiltCard key={p.provider} delay={i * 0.06} glow={live ? "plasma" : undefined}>
+            <Card key={p.provider} delay={i * 0.06}>
               <div className="space-y-3 p-5">
                 <div className="flex items-center justify-between">
                   <div className="group flex items-center gap-2">
-                    <Icon size={22} className="text-plasma" />
-                    <span className="font-display text-sm font-bold uppercase tracking-[0.18em]">{p.provider}</span>
+                    <Icon size={22} className="text-brass" />
+                    <span className="font-display text-sm font-bold uppercase tracking-wide">{p.provider}</span>
                   </div>
                   <Pill tone={live ? "ok" : p.mode === "disabled" ? "mute" : "warn"} dot>{p.mode}</Pill>
                 </div>
@@ -62,12 +62,12 @@ function Integrations() {
                   {p.mode === "live" && !p.credentials_configured && <div className="text-alert">API key missing on the server</div>}
                 </div>
                 {p.provider === "evon" && can("admin") && (
-                  <Button3D size="sm" variant="steel" loading={check.isPending} onClick={() => check.mutate()}>
+                  <Button3D size="sm" variant="neutral" loading={check.isPending} onClick={() => check.mutate()}>
                     Test connection
                   </Button3D>
                 )}
               </div>
-            </TiltCard>
+            </Card>
           );
         })}
       </div>
@@ -89,7 +89,7 @@ function Integrations() {
         <p className="mt-4 text-xs text-ink-mute">{data.privacy_notice} Recordings are deleted automatically after the retention period; transcripts and incidents are kept.</p>
         {can("admin") && (
           <div className="mt-4">
-            <Button3D size="sm" variant="steel" icon={<TrashIcon size={14} />} loading={retention.isPending} onClick={() => retention.mutate()}>
+            <Button3D size="sm" variant="neutral" icon={<TrashIcon size={14} />} loading={retention.isPending} onClick={() => retention.mutate()}>
               Apply retention now
             </Button3D>
           </div>
@@ -139,12 +139,12 @@ function Users() {
                   <Select aria-label={`Role for ${u.name}`} value={u.role} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })} className="!h-8 !w-36 text-xs">
                     {["technician", "supervisor", "admin"].map((r) => <option key={r} value={r}>{r}</option>)}
                   </Select>
-                  <Button3D size="sm" variant={u.is_active ? "ghost" : "steel"} onClick={() => update.mutate({ id: u.id, is_active: !u.is_active })}>
+                  <Button3D size="sm" variant={u.is_active ? "ghost" : "neutral"} onClick={() => update.mutate({ id: u.id, is_active: !u.is_active })}>
                     {u.is_active ? "Deactivate" : "Reactivate"}
                   </Button3D>
                 </>
               ) : (
-                <Pill tone="plasma">{u.role}</Pill>
+                <Pill tone="brass">{u.role}</Pill>
               )}
               {!u.is_active && <Pill tone="alert">inactive</Pill>}
             </li>
@@ -165,7 +165,7 @@ function Users() {
           <Select aria-label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
             {["technician", "supervisor", "admin"].map((r) => <option key={r} value={r}>{r}</option>)}
           </Select>
-          <Button3D type="submit" variant="plasma" loading={create.isPending}>Add member</Button3D>
+          <Button3D type="submit" variant="dark" loading={create.isPending}>Add member</Button3D>
           {create.error && <div className="sm:col-span-2 lg:col-span-5"><ErrorBox error={create.error} /></div>}
         </form>
       )}
@@ -196,7 +196,7 @@ function Password() {
         <Field label="New password">
           <Input required type="password" minLength={8} autoComplete="new-password" value={f.new_password} onChange={(e) => setF({ ...f, new_password: e.target.value })} />
         </Field>
-        <Button3D type="submit" variant="steel" loading={change.isPending}>Update</Button3D>
+        <Button3D type="submit" variant="neutral" loading={change.isPending}>Update</Button3D>
         {change.error && <div className="sm:col-span-3"><ErrorBox error={change.error} /></div>}
       </form>
     </Panel>

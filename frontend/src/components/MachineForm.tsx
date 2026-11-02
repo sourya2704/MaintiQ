@@ -85,7 +85,7 @@ export function MachineForm({
             Cancel
           </Button3D>
         )}
-        <Button3D type="submit" variant="plasma" loading={busy}>
+        <Button3D type="submit" variant="dark" loading={busy}>
           {submitLabel}
         </Button3D>
       </div>

@@ -14,21 +14,19 @@ import { CheckIcon, GearsIcon, IncidentIcon, SymptomIcon, XIcon } from "../icons
 import { Button3D } from "./Button3D";
 
 const toneClasses: Record<Tone, string> = {
-  ok: "text-ok border-ok/40 bg-ok/10",
+  ok: "text-ok border-ok/35 bg-ok/10",
   warn: "text-warn border-warn/40 bg-warn/10",
-  alert: "text-alert border-alert/40 bg-alert/10",
-  plasma: "text-plasma border-plasma/40 bg-plasma/10",
-  ember: "text-ember border-ember/40 bg-ember/10",
-  mute: "text-ink-mute border-line bg-panel",
-  violet: "text-violet border-violet/40 bg-violet/10",
+  alert: "text-alert border-alert/35 bg-alert/10",
+  brass: "text-brass border-brass/35 bg-brass/10",
+  rust: "text-rust border-rust/35 bg-rust/10",
+  mute: "text-ink-mute border-line bg-sunk",
+  taupe: "text-taupe border-taupe/35 bg-taupe/10",
 };
 
 export function Pill({ tone = "mute", children, dot, className = "" }: { tone?: Tone; children: ReactNode; dot?: boolean; className?: string }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${toneClasses[tone]} ${className}`}
-    >
-      {dot && <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />}
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${toneClasses[tone]} ${className}`}>
+      {dot && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
       {children}
     </span>
   );
@@ -44,8 +42,8 @@ export function StatusPill({ value, tones }: { value: string; tones: Record<stri
 
 export function SymptomChip({ tag }: { tag: string }) {
   return (
-    <span className="group inline-flex items-center gap-1.5 rounded-md border border-line bg-panel-2/70 px-2 py-1 text-xs text-ink-dim">
-      <SymptomIcon tag={tag} size={14} className="text-ember" />
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-sunk px-2 py-1 text-xs text-ink-dim">
+      <SymptomIcon tag={tag} size={14} className="text-rust" />
       {humanize(tag)}
     </span>
   );
@@ -67,35 +65,29 @@ export function Panel({
   tag?: ReactNode;
 }) {
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-30px" }}
-      transition={{ duration: 0.45 }}
-      className={`glass relative rounded-2xl ${className}`}
-    >
+    <section className={`surface rounded-xl ${className}`}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5">
-          <div className="group flex items-center gap-2.5">
-            {icon && <span className="text-plasma">{icon}</span>}
-            <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.14em] text-ink">{title}</h2>
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
+          <div className="group flex flex-wrap items-center gap-2.5">
+            {icon && <span className="text-rust">{icon}</span>}
+            <h2 className="font-display text-base font-bold uppercase tracking-wide text-ink">{title}</h2>
             {tag}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
       )}
       <div className="p-5">{children}</div>
-    </motion.section>
+    </section>
   );
 }
 
 const fieldBase =
-  "w-full rounded-lg border border-line bg-deck/80 px-3 py-2 text-sm text-ink placeholder:text-ink-mute outline-none transition focus:border-plasma focus:shadow-[0_0_0_3px_rgb(34_211_238/0.15)] disabled:opacity-60";
+  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-mute outline-none transition focus:border-rust focus:ring-2 focus:ring-rust/15 disabled:opacity-60";
 
 export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wider text-ink-dim">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-ink-dim">{label}</span>
       {children}
       {error ? <span className="block text-xs text-alert">{error}</span> : hint ? <span className="block text-xs text-ink-mute">{hint}</span> : null}
     </label>
@@ -106,15 +98,13 @@ export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p}
 export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea {...p} className={`${fieldBase} min-h-24 resize-y leading-relaxed ${p.className ?? ""}`} />
 );
-export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => (
-  <select {...p} className={`${fieldBase} h-10 ${p.className ?? ""}`} />
-);
+export const Select = (p: SelectHTMLAttributes<HTMLSelectElement>) => <select {...p} className={`${fieldBase} h-10 ${p.className ?? ""}`} />;
 
 export function EmptyState({ title, body, action, icon }: { title: string; body?: string; action?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="group flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line px-6 py-10 text-center">
-      <div className="text-ink-mute">{icon ?? <GearsIcon size={40} />}</div>
-      <p className="font-display text-sm font-bold uppercase tracking-widest text-ink-dim">{title}</p>
+    <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-10 text-center">
+      <div className="text-ink-mute">{icon ?? <GearsIcon size={36} />}</div>
+      <p className="font-display text-base font-bold uppercase tracking-wide text-ink-dim">{title}</p>
       {body && <p className="max-w-md text-sm text-ink-mute">{body}</p>}
       {action}
     </div>
@@ -140,13 +130,13 @@ export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => v
   );
 }
 
-export function Stat({ label, value, sub, tone = "plasma" }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "plasma" | "ember" | "alert" | "ok" | "warn" }) {
-  const color = { plasma: "text-plasma", ember: "text-ember", alert: "text-alert", ok: "text-ok", warn: "text-warn" }[tone];
+export function Stat({ label, value, sub, tone = "brass" }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "brass" | "rust" | "alert" | "ok" | "warn" }) {
+  const color = { brass: "text-brass", rust: "text-rust", alert: "text-alert", ok: "text-ok", warn: "text-warn" }[tone];
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-mute">{label}</div>
-      <div className={`mt-1 font-display text-3xl font-extrabold ${color} drop-shadow-[0_0_12px_currentColor]`}>{value}</div>
-      {sub && <div className="mt-1 text-xs text-ink-mute">{sub}</div>}
+      <div className="text-xs font-semibold uppercase tracking-wide text-ink-mute">{label}</div>
+      <div className={`mt-1 font-display text-4xl font-bold ${color}`}>{value}</div>
+      {sub && <div className="mt-0.5 text-xs text-ink-mute">{sub}</div>}
     </div>
   );
 }
@@ -176,7 +166,7 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-void/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-espresso/50 p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -186,23 +176,22 @@ export function ConfirmDialog({
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            initial={{ scale: 0.9, rotateX: 18, y: 20 }}
-            animate={{ scale: 1, rotateX: 0, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            style={{ perspective: 800 }}
-            className="glass w-full max-w-md overflow-hidden rounded-2xl"
+            initial={{ scale: 0.96, y: 8 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.98, opacity: 0 }}
+            className="surface w-full max-w-md overflow-hidden rounded-xl shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {danger && <div className="hazard-stripe h-1.5" />}
-            <div className="space-y-3 p-6">
-              <h3 className="font-display text-base font-bold uppercase tracking-widest">{title}</h3>
+            <div className="space-y-2 p-6">
+              <h3 className="font-display text-lg font-bold uppercase tracking-wide">{title}</h3>
               <div className="text-sm text-ink-dim">{body}</div>
             </div>
-            <div className="flex justify-end gap-3 border-t border-line px-6 py-4">
+            <div className="flex justify-end gap-3 border-t border-line bg-sunk/50 px-6 py-4">
               <Button3D variant="ghost" onClick={onClose}>
                 Cancel
               </Button3D>
-              <Button3D variant={danger ? "danger" : "ember"} loading={busy} onClick={onConfirm} autoFocus>
+              <Button3D variant={danger ? "danger" : "primary"} loading={busy} onClick={onConfirm} autoFocus>
                 {confirmLabel}
               </Button3D>
             </div>
@@ -215,7 +204,7 @@ export function ConfirmDialog({
 
 // ---------------------------------------------------------------- toasts
 
-type Toast = { id: number; tone: "ok" | "alert" | "plasma"; text: string };
+type Toast = { id: number; tone: "ok" | "alert" | "info"; text: string };
 const ToastCtx = createContext<(tone: Toast["tone"], text: string) => void>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -233,17 +222,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           {toasts.map((t) => (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0, x: 40, rotateY: -30 }}
-              animate={{ opacity: 1, x: 0, rotateY: 0 }}
-              exit={{ opacity: 0, x: 40 }}
-              className={`glass pointer-events-auto flex items-start gap-3 rounded-xl p-3.5 text-sm ${
-                t.tone === "alert" ? "border-alert/50" : t.tone === "ok" ? "border-ok/40" : "border-plasma/40"
-              }`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="pointer-events-auto flex items-start gap-3 rounded-lg bg-espresso p-3.5 text-sm text-cream shadow-lg"
             >
-              <span className={t.tone === "alert" ? "text-alert" : t.tone === "ok" ? "text-ok" : "text-plasma"}>
+              <span className={t.tone === "alert" ? "text-[#e8907f]" : "text-[#b9c98f]"}>
                 {t.tone === "alert" ? <XIcon size={18} /> : <CheckIcon size={18} />}
               </span>
-              <span className="flex-1 text-ink">{t.text}</span>
+              <span className="flex-1">{t.text}</span>
             </motion.div>
           ))}
         </AnimatePresence>

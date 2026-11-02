@@ -48,10 +48,10 @@ export default function Incidents() {
         kicker="Incident log"
         title="Incidents"
         icon={<IncidentIcon size={28} />}
-        actions={<Button3D variant="ember" icon={<MicIcon size={16} />} onClick={() => navigate("/report")}>Report fault</Button3D>}
+        actions={<Button3D variant="primary" icon={<MicIcon size={16} />} onClick={() => navigate("/report")}>Report fault</Button3D>}
       />
 
-      <div className="glass mb-6 space-y-3 rounded-2xl p-3">
+      <div className="surface mb-6 space-y-3 rounded-xl p-3">
         <form
           className="relative"
           onSubmit={(e) => {
@@ -77,14 +77,14 @@ export default function Incidents() {
               {FILTERS[k].map((v) => <option key={v} value={v}>{humanize(v)}</option>)}
             </Select>
           ))}
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-line bg-deck/80 px-3 text-sm text-ink-dim">
-            <input type="checkbox" checked={get("mine") === "true"} onChange={(e) => setParam("mine", e.target.checked ? "true" : "")} className="accent-[#ff8a1f]" />
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-line bg-sunk/80 px-3 text-sm text-ink-dim">
+            <input type="checkbox" checked={get("mine") === "true"} onChange={(e) => setParam("mine", e.target.checked ? "true" : "")} className="accent-[#a0522d]" />
             Mine only
           </label>
         </div>
         {filtered && (
           <button
-            className="text-xs text-plasma hover:underline"
+            className="text-xs text-brass hover:underline"
             onClick={() => {
               setQInput("");
               setParams(new URLSearchParams(), { replace: true });
@@ -111,9 +111,9 @@ export default function Incidents() {
 
       {pages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3">
-          <Button3D size="sm" variant="steel" disabled={page <= 1} onClick={() => setParam("page", String(page - 1))}>Prev</Button3D>
+          <Button3D size="sm" variant="neutral" disabled={page <= 1} onClick={() => setParam("page", String(page - 1))}>Prev</Button3D>
           <span className="font-mono text-xs text-ink-mute">{page} / {pages}</span>
-          <Button3D size="sm" variant="steel" disabled={page >= pages} onClick={() => setParam("page", String(page + 1))}>Next</Button3D>
+          <Button3D size="sm" variant="neutral" disabled={page >= pages} onClick={() => setParam("page", String(page + 1))}>Next</Button3D>
         </div>
       )}
     </div>

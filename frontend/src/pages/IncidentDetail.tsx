@@ -156,7 +156,7 @@ export default function IncidentDetail() {
       const audio = new Audio(URL.createObjectURL(blob));
       audio.onended = () => setSpeaking(false);
       await audio.play();
-      if (headers.get("X-Mantiq-Provider-Mode") === "mock") toast("plasma", "Timbre is in mock mode: playing a test tone.");
+      if (headers.get("X-Mantiq-Provider-Mode") === "mock") toast("info", "Timbre is in mock mode: playing a test tone.");
     } catch (e) {
       setSpeaking(false);
       onErr(e);
@@ -182,15 +182,14 @@ export default function IncidentDetail() {
       </Link>
 
       {/* header */}
-      <section className="glass relative overflow-hidden rounded-3xl p-6">
-        <div className="blueprint absolute inset-0 opacity-60" />
+      <section className="surface relative overflow-hidden rounded-xl p-6">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <Link to={`/machines/${inc.machine.id}`} className="group flex items-center gap-3">
-            <div className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-deck text-plasma transition group-hover:glow-plasma">
+            <div className="grid h-14 w-14 place-items-center rounded-xl border border-line bg-sunk text-brass transition group-hover:">
               <MachineTypeIcon type={inc.machine.type} size={30} />
             </div>
             <div>
-              <div className="font-mono text-lg font-bold text-ember">{inc.machine.asset_code}</div>
+              <div className="font-mono text-lg font-bold text-rust">{inc.machine.asset_code}</div>
               <div className="text-sm text-ink-dim">{inc.machine.name}</div>
               <div className="font-mono text-[11px] text-ink-mute">
                 {fmtDate(inc.occurred_at, true)} · reported by {inc.reporter?.name ?? "unknown"}
@@ -213,7 +212,7 @@ export default function IncidentDetail() {
       </section>
 
       {inc.safety_notice && (
-        <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} role="alert" className="overflow-hidden rounded-2xl border border-alert/50 bg-alert/10">
+        <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} role="alert" className="overflow-hidden rounded-xl border border-alert/50 bg-alert/10">
           <div className="hazard-stripe h-1.5" />
           <div className="flex items-start gap-3 p-4 text-sm text-ink">
             <ShieldIcon size={22} className="shrink-0 text-alert" />
@@ -228,11 +227,11 @@ export default function IncidentDetail() {
           <p className="text-sm text-ink-dim">{inc.jobs.filter((j) => j.provider === "prisma").at(-1)?.safe_error_message ?? "Prisma could not transcribe this recording."}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {audio?.retention_status === "retained" && (
-              <Button3D variant="plasma" icon={<RefreshIcon size={16} />} loading={retranscribe.isPending} onClick={() => retranscribe.mutate()}>
+              <Button3D variant="dark" icon={<RefreshIcon size={16} />} loading={retranscribe.isPending} onClick={() => retranscribe.mutate()}>
                 Retry Prisma
               </Button3D>
             )}
-            <Button3D variant="steel" icon={<KeyboardIcon size={16} />} onClick={() => setTranscriptEdit("")}>
+            <Button3D variant="neutral" icon={<KeyboardIcon size={16} />} onClick={() => setTranscriptEdit("")}>
               Type transcript instead
             </Button3D>
           </div>
@@ -258,7 +257,7 @@ export default function IncidentDetail() {
             }
           >
             {inc.processing_status === "transcribing" ? (
-              <div className="flex items-center gap-3 py-6 text-sm text-plasma">
+              <div className="flex items-center gap-3 py-6 text-sm text-brass">
                 <GearIcon size={22} className="animate-spin" /> Gnani Prisma is transcribing the voice note…
               </div>
             ) : transcriptEdit !== null ? (
@@ -269,7 +268,7 @@ export default function IncidentDetail() {
                   <Button3D size="sm" variant="ghost" onClick={() => setTranscriptEdit(null)}>Cancel</Button3D>
                   <Button3D
                     size="sm"
-                    variant="plasma"
+                    variant="dark"
                     loading={patch.isPending}
                     onClick={() => patch.mutate({ transcript_edited: transcriptEdit }, { onSuccess: () => setTranscriptEdit(null) })}
                   >
@@ -279,11 +278,11 @@ export default function IncidentDetail() {
               </div>
             ) : transcript ? (
               <div className="space-y-3">
-                <blockquote className="rounded-xl border-l-2 border-plasma bg-deck/80 p-4 text-[15px] leading-relaxed text-ink">{transcript}</blockquote>
+                <blockquote className="rounded-xl border-l-2 border-brass bg-sunk/80 p-4 text-[15px] leading-relaxed text-ink">{transcript}</blockquote>
                 {inc.transcript_edited && inc.transcript_original && (
                   <details className="text-xs text-ink-mute">
                     <summary className="cursor-pointer hover:text-ink">Original transcript</summary>
-                    <p className="mt-2 rounded-lg bg-deck p-3 leading-relaxed">{inc.transcript_original}</p>
+                    <p className="mt-2 rounded-lg bg-sunk p-3 leading-relaxed">{inc.transcript_original}</p>
                   </details>
                 )}
               </div>
@@ -310,7 +309,7 @@ export default function IncidentDetail() {
             )}
             {transcript && !busy && !confirmed && (
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-                <Button3D variant="ember" icon={<BearingIcon size={16} />} loading={analyze.isPending} onClick={() => analyze.mutate()}>
+                <Button3D variant="primary" icon={<BearingIcon size={16} />} loading={analyze.isPending} onClick={() => analyze.mutate()}>
                   {hasDraft ? "Re-run Evon analysis" : "Analyse with Evon"}
                 </Button3D>
                 <span className="text-xs text-ink-mute">Correct the transcript first. Evon only works from what is written here.</span>
@@ -336,7 +335,7 @@ export default function IncidentDetail() {
                   <Button3D size="sm" variant="ghost" onClick={() => { setEditing(false); setDraft(null); }}>Cancel</Button3D>
                   <Button3D
                     size="sm"
-                    variant="plasma"
+                    variant="dark"
                     loading={patch.isPending}
                     onClick={() => draft && patch.mutate(draft, { onSuccess: () => { setEditing(false); setDraft(null); toast("ok", "Draft saved"); } })}
                   >
@@ -351,7 +350,7 @@ export default function IncidentDetail() {
             }
           >
             {inc.processing_status === "analyzing" ? (
-              <div className="flex items-center gap-3 py-6 text-sm text-violet">
+              <div className="flex items-center gap-3 py-6 text-sm text-taupe">
                 <GearIcon size={22} className="animate-spin" /> Gnani Evon is drafting the incident and checking it against failure memory…
               </div>
             ) : inc.processing_status === "analysis_failed" ? (
@@ -364,7 +363,7 @@ export default function IncidentDetail() {
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-ink-dim">Summary</h3>
+                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-dim">Summary</h3>
                   {editing ? (
                     <Textarea rows={2} value={d.summary ?? ""} onChange={(e) => setD("summary")(e.target.value)} />
                   ) : (
@@ -380,7 +379,7 @@ export default function IncidentDetail() {
                   ) : null}
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2">
-                  <ListBlock title="Symptoms" items={d.symptoms} editing={editing} onChange={setD("symptoms")} tone="ember" />
+                  <ListBlock title="Symptoms" items={d.symptoms} editing={editing} onChange={setD("symptoms")} tone="rust" />
                   <ListBlock title="Observations (reported)" items={d.observations} editing={editing} onChange={setD("observations")} />
                   <ListBlock title="Actions already taken" items={d.actions_taken} editing={editing} onChange={setD("actions_taken")} tone="ok" />
                   <ListBlock
@@ -388,8 +387,8 @@ export default function IncidentDetail() {
                     items={d.suspected_causes}
                     editing={editing}
                     onChange={setD("suspected_causes")}
-                    tone="violet"
-                    badge={<Pill tone="violet">hypotheses, not verified</Pill>}
+                    tone="taupe"
+                    badge={<Pill tone="taupe">hypotheses, not verified</Pill>}
                   />
                   <ListBlock title="Missing information" items={d.missing_information} editing={editing} onChange={setD("missing_information")} tone="warn" empty="Nothing flagged" />
                   <ListBlock
@@ -401,14 +400,14 @@ export default function IncidentDetail() {
                   />
                 </div>
                 {(inc.analysis_warnings.length > 0 || inc.confidence_notes) && (
-                  <div className="space-y-1.5 rounded-xl border border-line bg-deck/70 p-3 text-xs text-ink-mute">
+                  <div className="space-y-1.5 rounded-xl border border-line bg-sunk/70 p-3 text-xs text-ink-mute">
                     {inc.analysis_warnings.map((w) => <p key={w} className="text-warn">⚠ {w}</p>)}
                     {inc.confidence_notes && <p>{inc.confidence_notes}</p>}
                   </div>
                 )}
                 {!confirmed && !editing && (
                   <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
-                    <Button3D variant="ember" size="lg" icon={<CheckIcon size={18} />} onClick={() => setConfirmOpen(true)}>
+                    <Button3D variant="primary" size="lg" icon={<CheckIcon size={18} />} onClick={() => setConfirmOpen(true)}>
                       Confirm incident
                     </Button3D>
                     <span className="text-xs text-ink-mute">Confirming marks these fields as technician-reviewed.</span>
@@ -428,7 +427,7 @@ export default function IncidentDetail() {
             {inc.outcomes.length > 0 && (
               <ol className="mb-5 space-y-3">
                 {inc.outcomes.map((o) => (
-                  <li key={o.id} className="rounded-xl border border-line bg-deck/70 p-4">
+                  <li key={o.id} className="rounded-xl border border-line bg-sunk/70 p-4">
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusPill value={o.resolution_status} tones={resolutionTone} />
                       <span className="font-mono text-xs text-ink-mute">
@@ -464,10 +463,10 @@ export default function IncidentDetail() {
 
           <Panel title="Actions" icon={<GearIcon size={18} />}>
             <div className="flex flex-wrap gap-2">
-              <Button3D size="sm" variant="steel" icon={<DownloadIcon size={14} />} onClick={() => download("markdown")}>Export report</Button3D>
-              <Button3D size="sm" variant="steel" icon={<DownloadIcon size={14} />} onClick={() => download("json")}>JSON</Button3D>
+              <Button3D size="sm" variant="neutral" icon={<DownloadIcon size={14} />} onClick={() => download("markdown")}>Export report</Button3D>
+              <Button3D size="sm" variant="neutral" icon={<DownloadIcon size={14} />} onClick={() => download("json")}>JSON</Button3D>
               {inc.summary && (
-                <Button3D size="sm" variant="plasma" icon={<SpeakerIcon size={14} />} loading={speaking} onClick={speak}>
+                <Button3D size="sm" variant="dark" icon={<SpeakerIcon size={14} />} loading={speaking} onClick={speak}>
                   Read aloud
                 </Button3D>
               )}
@@ -483,10 +482,10 @@ export default function IncidentDetail() {
             ) : (
               <ul className="space-y-2">
                 {inc.jobs.map((j) => (
-                  <li key={j.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-deck/70 px-3 py-2 text-xs">
+                  <li key={j.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-sunk/70 px-3 py-2 text-xs">
                     <span className="font-mono font-bold uppercase text-ink">{j.provider}</span>
                     <Pill tone={j.mode === "live" ? "ok" : "warn"}>{j.mode}</Pill>
-                    <Pill tone={j.status === "succeeded" ? "ok" : j.status === "failed" ? "alert" : "plasma"}>{j.status}</Pill>
+                    <Pill tone={j.status === "succeeded" ? "ok" : j.status === "failed" ? "alert" : "brass"}>{j.status}</Pill>
                     <span className="font-mono text-ink-mute">{j.model}</span>
                     {j.latency_ms != null && <span className="ml-auto font-mono text-ink-mute">{j.latency_ms} ms</span>}
                     {j.safe_error_message && <span className="w-full text-alert">{j.safe_error_message}</span>}
@@ -494,7 +493,7 @@ export default function IncidentDetail() {
                 ))}
               </ul>
             )}
-            <button className="mt-4 text-xs text-plasma hover:underline" onClick={() => setShowAudit((s) => !s)}>
+            <button className="mt-4 text-xs text-brass hover:underline" onClick={() => setShowAudit((s) => !s)}>
               {showAudit ? "Hide" : "Show"} audit trail
             </button>
             <AnimatePresence>

@@ -1,9 +1,10 @@
 import { Billboard, Grid, useCursor } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { MachineMesh, type MachineKind } from "./MachineModel";
-import { COLORS, statusColor } from "./shared";
+import { FLOOR, MachineMesh, type MachineKind } from "./MachineModel";
+import { MAT, statusColor } from "./shared";
+import { Studio } from "./Studio";
 
 export interface FloorMachine {
   id: string;
@@ -15,36 +16,39 @@ export interface FloorMachine {
   openIncidents: number;
 }
 
-/** Label drawn to a canvas texture: lives in the 3D scene, no DOM overlay. */
+const STATION_SCALE = 0.8;
+const GROUND = FLOOR * STATION_SCALE;
+
+/** Asset tag drawn to a canvas texture, so it lives in the scene (no DOM overlay). */
 function Label({ code, sub, color, hover }: { code: string; sub: string; color: string; hover: boolean }) {
   const texture = useMemo(() => {
     const c = document.createElement("canvas");
     c.width = 256;
-    c.height = 112;
+    c.height = 104;
     const g = c.getContext("2d")!;
-    g.fillStyle = "rgba(5,8,15,0.82)";
-    g.strokeStyle = color;
-    g.lineWidth = 4;
+    g.fillStyle = "#2e2219";
     g.beginPath();
-    g.roundRect(4, 4, 248, 104, 16);
+    g.roundRect(0, 0, 256, 104, 14);
     g.fill();
-    g.stroke();
-    g.textAlign = "center";
     g.fillStyle = color;
-    g.font = "bold 40px 'JetBrains Mono', monospace";
-    g.fillText(code, 128, 52);
-    g.fillStyle = "#9aa8c4";
-    g.font = "26px 'JetBrains Mono', monospace";
-    g.fillText(sub, 128, 90);
+    g.fillRect(0, 0, 12, 104);
+    g.textAlign = "left";
+    g.fillStyle = "#f3ede2";
+    g.font = "600 42px 'IBM Plex Mono', monospace";
+    g.fillText(code, 30, 50);
+    g.fillStyle = "#c9b79c";
+    g.font = "26px 'IBM Plex Mono', monospace";
+    g.fillText(sub, 30, 86);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
     return t;
   }, [code, sub, color]);
-  const s = hover ? 1.15 : 1;
+  useEffect(() => () => texture.dispose(), [texture]);
+  const s = hover ? 1.12 : 1;
   return (
-    <Billboard position={[0, 1.7, 0]}>
-      <mesh scale={[1.6 * s, 0.7 * s, 1]}>
+    <Billboard position={[0, 1.55, 0]}>
+      <mesh scale={[1.5 * s, 0.61 * s, 1]}>
         <planeGeometry />
         <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
       </mesh>
@@ -52,75 +56,60 @@ function Label({ code, sub, color, hover }: { code: string; sub: string; color: 
   );
 }
 
-function Station({
-  m,
-  position,
-  onSelect,
-}: {
-  m: FloorMachine;
-  position: [number, number, number];
-  onSelect: (id: string) => void;
-}) {
+function Station({ m, position, onSelect }: { m: FloorMachine; position: [number, number, number]; onSelect: (id: string) => void }) {
   const [hover, setHover] = useState(false);
-  const lift = useRef<THREE.Group>(null);
+  const turn = useRef<THREE.Group>(null);
   useCursor(hover);
   useFrame((_, dt) => {
-    if (lift.current) {
-      lift.current.position.y = THREE.MathUtils.damp(lift.current.position.y, hover ? 0.35 : 0, 6, dt);
-      lift.current.rotation.y = THREE.MathUtils.damp(lift.current.rotation.y, hover ? 0.5 : 0, 4, dt);
-    }
+    if (turn.current) turn.current.rotation.y = THREE.MathUtils.damp(turn.current.rotation.y, hover ? 0.25 : 0, 4, dt);
   });
-  const color = statusColor(m.status);
   return (
     <group position={position}>
-      <group ref={lift}>
-        <group
-          scale={0.8}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            setHover(true);
-          }}
-          onPointerOut={() => setHover(false)}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(m.id);
-          }}
-        >
-          <MachineMesh kind={m.kind} status={m.status} symptoms={m.symptoms} highlight={hover} />
-          {/* generous invisible hit box */}
-          <mesh visible={false} position={[0, 0.1, 0]}>
-            <boxGeometry args={[3, 2.2, 2]} />
-          </mesh>
-        </group>
+      <group
+        ref={turn}
+        scale={STATION_SCALE}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHover(true);
+        }}
+        onPointerOut={() => setHover(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(m.id);
+        }}
+      >
+        <MachineMesh kind={m.kind} status={m.status} symptoms={m.symptoms} highlight={hover} />
+        <mesh visible={false}>
+          <boxGeometry args={[3.2, 2, 2]} />
+        </mesh>
       </group>
-      <Label code={m.asset_code} sub={m.openIncidents > 0 ? `${m.openIncidents} open` : "clear"} color={color} hover={hover} />
+      <Label code={m.asset_code} sub={m.openIncidents > 0 ? `${m.openIncidents} open` : "no open faults"} color={statusColor(m.status)} hover={hover} />
     </group>
   );
 }
 
 function CameraRig({ anchor, extent }: { anchor: React.RefObject<HTMLDivElement | null>; extent: number }) {
   useFrame(({ camera, pointer }, dt) => {
-    // Scroll through the section to fly from a high overview down to floor level.
+    // Scrolling through the section lowers the camera from an overview to floor level.
     let p = 0.5;
     const el = anchor.current;
     if (el) {
       const r = el.getBoundingClientRect();
       const travel = Math.max(1, r.height - window.innerHeight);
       p = THREE.MathUtils.clamp(-(r.top - 56) / travel, 0, 1);
-      p = p * p * (3 - 2 * p); // ease in-out
+      p = p * p * (3 - 2 * p);
     }
-    const height = THREE.MathUtils.lerp(extent * 1.25 + 6, 3.2, p);
-    const dist = THREE.MathUtils.lerp(extent * 0.6 + 4, extent * 0.9 + 6, p);
-    const tx = pointer.x * 2.5;
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, tx, 3, dt);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, height + pointer.y * 1.2, 3, dt);
+    const height = THREE.MathUtils.lerp(extent * 1.1 + 5, 2.6, p);
+    const dist = THREE.MathUtils.lerp(extent * 0.55 + 4, extent * 0.85 + 5.5, p);
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, pointer.x * 1.5, 3, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, height + pointer.y * 0.6, 3, dt);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, dist, 3, dt);
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, -0.2, 0);
   });
   return null;
 }
 
-/** Live 3D plant floor: every machine as a model coloured by status, animated by its open symptoms. */
+/** Live 3D plant floor: every machine as a model, marked by status and animated by its open symptoms. */
 export default function PlantFloor({
   machines,
   onSelect,
@@ -130,42 +119,43 @@ export default function PlantFloor({
   machines: FloorMachine[];
   onSelect: (id: string) => void;
   className?: string;
-  /** Element whose scroll position drives the camera (e.g. a tall wrapper around a sticky canvas). */
+  /** Element whose scroll position drives the camera (a tall wrapper around a sticky canvas). */
   trackRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const anchor = useRef<HTMLDivElement>(null);
   const cols = Math.min(4, Math.max(2, Math.ceil(Math.sqrt(machines.length))));
-  const spacing = 4.2;
+  const spacing = 3.8;
+  const rows = Math.ceil(machines.length / cols);
   const layout = useMemo(
     () =>
       machines.map((_, i) => {
         const row = Math.floor(i / cols);
         const col = i % cols;
-        const rows = Math.ceil(machines.length / cols);
         return [(col - (cols - 1) / 2) * spacing, 0, (row - (rows - 1) / 2) * spacing] as [number, number, number];
       }),
-    [machines, cols],
+    [machines, cols, rows],
   );
-  const extent = Math.max(cols, Math.ceil(machines.length / cols)) * spacing * 0.5;
+  const extent = Math.max(cols, rows) * spacing * 0.5;
 
   return (
     <div ref={anchor} className={className}>
-      <Canvas camera={{ position: [0, 12, 14], fov: 45 }} dpr={[1, 1.75]} shadows gl={{ antialias: true, alpha: true }}>
-        <fog attach="fog" args={["#05080f", 14, 42]} />
-        <ambientLight intensity={0.45} />
-        <directionalLight position={[6, 12, 6]} intensity={2.4} castShadow />
-        <pointLight position={[-8, 4, -6]} intensity={60} color={COLORS.plasma} />
-        <pointLight position={[8, 3, 6]} intensity={50} color={COLORS.ember} />
+      <Canvas camera={{ position: [0, 10, 12], fov: 42 }} dpr={[1, 1.75]} shadows gl={{ antialias: true }}>
+        <color attach="background" args={["#e9e1d3"]} />
+        <fog attach="fog" args={["#e9e1d3", 16, 40]} />
+        <Studio shadowExtent={extent + 4} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, GROUND - 0.002, 0]} material={MAT.concrete} receiveShadow>
+          <planeGeometry args={[80, 80]} />
+        </mesh>
         <Grid
-          position={[0, -0.66, 0]}
+          position={[0, GROUND - 0.001, 0]}
           infiniteGrid
-          cellSize={0.6}
-          cellThickness={0.6}
-          cellColor="#1f2b48"
-          sectionSize={4.2}
-          sectionThickness={1.2}
-          sectionColor="#2f4170"
-          fadeDistance={38}
+          cellSize={1}
+          cellThickness={0.5}
+          cellColor="#bfb19b"
+          sectionSize={spacing}
+          sectionThickness={0.9}
+          sectionColor="#a8977d"
+          fadeDistance={34}
           fadeStrength={1.5}
         />
         {machines.map((m, i) => (

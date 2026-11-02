@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { MemoryIcon, SearchBoltIcon, SymptomIcon } from "../components/icons/MachineIcons";
 import { RelatedList } from "../components/incident/parts";
 import { PageHeader } from "../components/layout/AppShell";
@@ -10,7 +10,6 @@ import { api } from "../lib/api";
 import { humanize } from "../lib/format";
 import type { Machine, Page, RelatedResponse } from "../lib/types";
 
-const GearTrain = lazy(() => import("../components/three/GearTrain"));
 
 const EXAMPLES = ["motor vibrating and running hot", "pump seal leaking", "compressor high temperature alarm", "conveyor belt slipping"];
 
@@ -30,12 +29,9 @@ export default function MemorySearch() {
     <div className="mx-auto max-w-4xl">
       <PageHeader kicker="Investigate a recurring problem" title="Failure Memory" icon={<MemoryIcon size={28} />} />
 
-      <section className="glass relative mb-6 overflow-hidden rounded-3xl">
-        <Suspense fallback={null}>
-          <GearTrain className="pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-40" intensity={0.5} />
-        </Suspense>
+      <section className="surface mb-6 rounded-xl">
         <form
-          className="relative space-y-4 p-6"
+          className="space-y-4 p-6"
           onSubmit={(e) => {
             e.preventDefault();
             run();
@@ -46,7 +42,7 @@ export default function MemorySearch() {
           </p>
           <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
             <div className="relative">
-              <SearchBoltIcon size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-plasma" />
+              <SearchBoltIcon size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brass" />
               <Input aria-label="Describe the symptoms" className="!h-12 pl-10 text-base" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. grinding noise and vibration at start-up" />
             </div>
             <Select aria-label="Machine (optional)" className="!h-12" value={machineId} onChange={(e) => setMachineId(e.target.value)}>
@@ -55,7 +51,7 @@ export default function MemorySearch() {
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button3D type="submit" variant="plasma" size="lg" icon={<MemoryIcon size={18} />} loading={results.isFetching} disabled={text.trim().length < 2}>
+            <Button3D type="submit" variant="dark" size="lg" icon={<MemoryIcon size={18} />} loading={results.isFetching} disabled={text.trim().length < 2}>
               Search memory
             </Button3D>
             {EXAMPLES.map((ex) => (
@@ -66,7 +62,7 @@ export default function MemorySearch() {
                   setText(ex);
                   run(ex);
                 }}
-                className="rounded-full border border-line px-3 py-1 text-xs text-ink-mute transition hover:border-plasma/50 hover:text-plasma"
+                className="rounded-full border border-line px-3 py-1 text-xs text-ink-mute transition hover:border-brass/50 hover:text-brass"
               >
                 {ex}
               </button>
@@ -84,7 +80,7 @@ export default function MemorySearch() {
               results.data && results.data.query_symptoms.length > 0 ? (
                 <span className="flex flex-wrap gap-1.5">
                   {results.data.query_symptoms.map((t) => (
-                    <span key={t} className="flex items-center gap-1 text-[11px] text-ember">
+                    <span key={t} className="flex items-center gap-1 text-[11px] text-rust">
                       <SymptomIcon tag={t} size={12} /> {humanize(t)}
                     </span>
                   ))}

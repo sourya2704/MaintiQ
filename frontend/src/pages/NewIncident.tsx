@@ -82,7 +82,7 @@ export default function NewIncident() {
           {machines.data?.items.length === 0 && (
             <p className="mt-3 text-sm text-ink-mute">
               No machines yet.{" "}
-              <button className="text-plasma underline" onClick={() => navigate("/machines")}>
+              <button className="text-brass underline" onClick={() => navigate("/machines")}>
                 Add one first
               </button>
               .
@@ -116,7 +116,7 @@ export default function NewIncident() {
                   setFile(null);
                 }}
                 className={`group flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition ${
-                  mode === id ? "border-ember/60 bg-ember/10 text-ember glow-ember" : "border-line text-ink-dim hover:border-line-bright hover:text-ink"
+                  mode === id ? "border-rust/60 bg-rust/10 text-rust" : "border-line text-ink-dim hover:border-line-strong hover:text-ink"
                 }`}
               >
                 <Icon size={17} /> {label}
@@ -125,7 +125,7 @@ export default function NewIncident() {
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div key={mode} initial={{ opacity: 0, rotateY: -12 }} animate={{ opacity: 1, rotateY: 0 }} exit={{ opacity: 0, rotateY: 12 }} transition={{ duration: 0.25 }}>
+            <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               {mode === "record" && <Recorder onRecorded={setFile} disabled={submit.isPending} />}
               {mode === "upload" && (
                 <div
@@ -143,11 +143,11 @@ export default function NewIncident() {
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInput.current?.click()}
                   role="button"
                   tabIndex={0}
-                  className={`group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed px-6 py-12 text-center transition ${
-                    drag ? "border-plasma bg-plasma/10" : "border-line hover:border-plasma/60"
+                  className={`group flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed px-6 py-12 text-center transition ${
+                    drag ? "border-brass bg-brass/10" : "border-line hover:border-brass/60"
                   }`}
                 >
-                  <UploadIcon size={40} className="text-plasma transition group-hover:-translate-y-1" />
+                  <UploadIcon size={40} className="text-brass transition group-hover:-translate-y-1" />
                   {file ? (
                     <div>
                       <div className="font-semibold">{file.name}</div>
@@ -175,7 +175,7 @@ export default function NewIncident() {
 
         {submit.error && <ErrorBox error={submit.error} />}
         <div className="flex flex-col items-center gap-3">
-          <Button3D variant="ember" size="lg" disabled={!ready} loading={submit.isPending} onClick={() => submit.mutate()} icon={<MicIcon size={18} />}>
+          <Button3D variant="primary" size="lg" disabled={!ready} loading={submit.isPending} onClick={() => submit.mutate()} icon={<MicIcon size={18} />}>
             {mode === "type" ? "Create incident" : "Submit voice note"}
           </Button3D>
           {mode !== "type" && prisma && (

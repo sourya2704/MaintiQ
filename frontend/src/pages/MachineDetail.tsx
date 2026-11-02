@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ClockIcon, EditIcon, MachineTypeIcon, MicIcon, SymptomIcon, WrenchIcon, machineKind } from "../components/icons/MachineIcons";
@@ -50,35 +49,34 @@ export default function MachineDetail() {
       </Link>
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="glass relative h-[380px] overflow-hidden rounded-3xl sm:h-[440px]">
-          <div className="blueprint absolute inset-0" />
+        <div className="surface relative h-[380px] overflow-hidden rounded-xl sm:h-[440px]">
           <Suspense fallback={<Loader label="Rendering model" />}>
             <MachineViewer className="absolute inset-0" kind={machineKind(m.type)} status={m.status} symptoms={[...openTags]} />
           </Suspense>
-          <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-[0.25em] text-ink-mute">
+          <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-wider text-ink-mute">
             Drag to orbit · scroll to turn
           </div>
           {openTags.size > 0 && (
             <div className="pointer-events-none absolute bottom-4 left-4 flex flex-wrap gap-1.5">
               {[...openTags].map((t) => (
-                <span key={t} className="flex items-center gap-1 rounded-md bg-void/80 px-2 py-1 text-[11px] text-ember backdrop-blur">
+                <span key={t} className="flex items-center gap-1 rounded-md bg-canvas/80 px-2 py-1 text-[11px] text-rust backdrop-blur">
                   <SymptomIcon tag={t} size={13} /> {humanize(t)}
                 </span>
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
 
         <div className="flex flex-col gap-4">
-          <div className="glass rounded-3xl p-6">
+          <div className="surface rounded-xl p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="group flex items-center gap-3">
-                <div className="grid h-12 w-12 place-items-center rounded-xl border border-line bg-deck text-plasma">
+                <div className="grid h-12 w-12 place-items-center rounded-xl border border-line bg-sunk text-brass">
                   <MachineTypeIcon type={m.type} size={26} />
                 </div>
                 <div>
-                  <div className="font-mono text-lg font-bold text-ember">{m.asset_code}</div>
-                  <h1 className="font-display text-xl font-extrabold uppercase tracking-[0.06em]">{m.name}</h1>
+                  <div className="font-mono text-lg font-bold text-rust">{m.asset_code}</div>
+                  <h1 className="font-display text-xl font-bold uppercase tracking-wide">{m.name}</h1>
                 </div>
               </div>
               <StatusPill value={m.status} tones={machineStatusTone} />
@@ -97,20 +95,20 @@ export default function MachineDetail() {
               ))}
             </dl>
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-line bg-deck p-3">
+              <div className="rounded-xl border border-line bg-sunk p-3">
                 <div className="text-[11px] uppercase tracking-wider text-ink-mute">Incidents</div>
-                <div className="font-display text-2xl font-extrabold text-plasma">{m.incident_count}</div>
+                <div className="font-display text-2xl font-bold text-brass">{m.incident_count}</div>
               </div>
-              <div className="rounded-xl border border-line bg-deck p-3">
+              <div className="rounded-xl border border-line bg-sunk p-3">
                 <div className="text-[11px] uppercase tracking-wider text-ink-mute">Open</div>
-                <div className={`font-display text-2xl font-extrabold ${m.open_incident_count ? "text-ember" : "text-ok"}`}>{m.open_incident_count}</div>
+                <div className={`font-display text-2xl font-bold ${m.open_incident_count ? "text-rust" : "text-ok"}`}>{m.open_incident_count}</div>
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button3D variant="ember" icon={<MicIcon size={16} />} onClick={() => navigate(`/report?machine=${m.id}`)}>
+              <Button3D variant="primary" icon={<MicIcon size={16} />} onClick={() => navigate(`/report?machine=${m.id}`)}>
                 Report fault
               </Button3D>
-              <Button3D variant="steel" icon={<EditIcon size={16} />} onClick={() => setEditing((e) => !e)}>
+              <Button3D variant="neutral" icon={<EditIcon size={16} />} onClick={() => setEditing((e) => !e)}>
                 Edit
               </Button3D>
             </div>
@@ -122,10 +120,10 @@ export default function MachineDetail() {
             ) : (
               <ul className="flex flex-wrap gap-2">
                 {m.recurring_symptoms.map((s) => (
-                  <li key={s.tag} className="group flex items-center gap-2 rounded-lg border border-line bg-deck px-3 py-2 text-sm">
-                    <SymptomIcon tag={s.tag} size={16} className="text-ember" />
+                  <li key={s.tag} className="group flex items-center gap-2 rounded-lg border border-line bg-sunk px-3 py-2 text-sm">
+                    <SymptomIcon tag={s.tag} size={16} className="text-rust" />
                     <span className="capitalize">{humanize(s.tag)}</span>
-                    <span className="rounded bg-panel-2 px-1.5 font-mono text-xs text-plasma">×{s.count}</span>
+                    <span className="rounded bg-card-2 px-1.5 font-mono text-xs text-brass">×{s.count}</span>
                     <span className="text-[11px] text-ink-mute">{timeAgo(s.last_seen)}</span>
                   </li>
                 ))}
@@ -145,22 +143,18 @@ export default function MachineDetail() {
         {m.timeline.length === 0 ? (
           <EmptyState title="No history yet" body="Incidents reported on this machine will appear here in order." />
         ) : (
-          <ol className="relative ml-3 border-l border-line-bright">
-            {m.timeline.map((t, i) => (
-              <motion.li
+          <ol className="relative ml-3 border-l border-line-strong">
+            {m.timeline.map((t) => (
+              <li
                 key={t.id}
-                initial={{ opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: Math.min(i * 0.05, 0.4) }}
                 className="relative pb-6 pl-6 last:pb-0"
               >
                 <span
-                  className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full border-2 border-void ${
-                    t.resolution_status === "resolved" ? "bg-ok" : t.resolution_status === "unresolved" ? "bg-alert" : "bg-ember"
-                  } shadow-[0_0_10px_currentColor]`}
+                  className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full border-2 border-canvas ${
+                    t.resolution_status === "resolved" ? "bg-ok" : t.resolution_status === "unresolved" ? "bg-alert" : "bg-rust"
+                  }`}
                 />
-                <Link to={`/incidents/${t.id}`} className="group block rounded-xl border border-transparent p-3 transition hover:border-line hover:bg-panel-2/50">
+                <Link to={`/incidents/${t.id}`} className="group block rounded-xl border border-transparent p-3 transition hover:border-line hover:bg-card-2/50">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-xs text-ink-mute">{fmtDate(t.occurred_at, true)}</span>
                     <StatusPill value={t.resolution_status} tones={resolutionTone} />
@@ -168,7 +162,7 @@ export default function MachineDetail() {
                     {t.review_status === "draft" && <Pill tone="warn">unreviewed</Pill>}
                     {t.is_seed && <Pill tone="mute">demo</Pill>}
                   </div>
-                  <div className="mt-1.5 text-sm text-ink group-hover:text-white">{t.summary ?? "Awaiting transcript…"}</div>
+                  <div className="mt-1.5 text-sm text-ink group-hover:text-rust-deep">{t.summary ?? "Awaiting transcript…"}</div>
                   <div className="mt-1 text-xs text-ink-mute">
                     {t.outcome_summary ? (
                       <span className="text-ok">Outcome · {t.outcome_summary}</span>
@@ -177,7 +171,7 @@ export default function MachineDetail() {
                     )}
                   </div>
                 </Link>
-              </motion.li>
+              </li>
             ))}
           </ol>
         )}

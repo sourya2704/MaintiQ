@@ -7,7 +7,7 @@ import { PageHeader } from "../components/layout/AppShell";
 import { MachineForm, type MachineInput } from "../components/MachineForm";
 import { Button3D } from "../components/ui/Button3D";
 import { EmptyState, ErrorBox, Input, Panel, Pill, Select, Skeleton, StatusPill, useToast } from "../components/ui/kit";
-import { TiltCard } from "../components/ui/TiltCard";
+import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { machineStatusTone, timeAgo } from "../lib/format";
 import type { Machine, Page } from "../lib/types";
@@ -47,7 +47,7 @@ export default function Machines() {
         title="Machines"
         icon={<FactoryIcon size={28} />}
         actions={
-          <Button3D variant="ember" icon={<PlusIcon size={16} />} onClick={() => setAdding((a) => !a)}>
+          <Button3D variant="primary" icon={<PlusIcon size={16} />} onClick={() => setAdding((a) => !a)}>
             Add machine
           </Button3D>
         }
@@ -63,7 +63,7 @@ export default function Machines() {
         )}
       </AnimatePresence>
 
-      <div className="glass mb-6 grid gap-3 rounded-2xl p-3 sm:grid-cols-[1fr_200px_180px]">
+      <div className="surface mb-6 grid gap-3 rounded-xl p-3 sm:grid-cols-[1fr_200px_180px]">
         <div className="relative">
           <SearchBoltIcon size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute" />
           <Input
@@ -95,21 +95,21 @@ export default function Machines() {
           icon={<FactoryIcon size={44} />}
           title={q || type || status ? "No machines match" : "No machines yet"}
           body={q || type || status ? "Try a different search or filter." : "Commission your first machine to start capturing incidents."}
-          action={!q && !type && !status ? <Button3D variant="ember" onClick={() => setAdding(true)}>Add machine</Button3D> : undefined}
+          action={!q && !type && !status ? <Button3D variant="primary" onClick={() => setAdding(true)}>Add machine</Button3D> : undefined}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.data?.items.map((m, i) => (
-            <TiltCard key={m.id} delay={i * 0.04} onClick={() => navigate(`/machines/${m.id}`)} glow={m.status === "down" ? "alert" : undefined}>
+            <Card key={m.id} delay={i * 0.04} onClick={() => navigate(`/machines/${m.id}`)} alert={m.status === "down"}>
               <div className="flex h-full flex-col gap-4 p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-line bg-deck text-plasma shadow-[inset_0_0_20px_rgb(34_211_238/0.08)]">
+                  <div className="grid h-14 w-14 place-items-center rounded-xl border border-line bg-sunk text-brass">
                     <MachineTypeIcon type={m.type} size={30} />
                   </div>
                   <StatusPill value={m.status} tones={machineStatusTone} />
                 </div>
                 <div>
-                  <div className="font-mono text-sm font-bold text-ember">{m.asset_code}</div>
+                  <div className="font-mono text-sm font-bold text-rust">{m.asset_code}</div>
                   <div className="text-base font-semibold">{m.name}</div>
                   <div className="text-xs capitalize text-ink-mute">
                     {m.type}
@@ -119,22 +119,22 @@ export default function Machines() {
                 <div className="mt-auto flex items-center justify-between border-t border-line pt-3 text-xs text-ink-mute">
                   <span>
                     <span className="font-mono text-ink">{m.incident_count ?? 0}</span> incidents ·{" "}
-                    <span className={m.open_incident_count ? "font-mono text-ember" : "font-mono text-ink"}>{m.open_incident_count ?? 0}</span> open
+                    <span className={m.open_incident_count ? "font-mono text-rust" : "font-mono text-ink"}>{m.open_incident_count ?? 0}</span> open
                   </span>
                   <span>{m.last_incident_at ? timeAgo(m.last_incident_at) : "no history"}</span>
                 </div>
                 {m.is_seed && <Pill tone="mute" className="self-start">demo data</Pill>}
               </div>
-            </TiltCard>
+            </Card>
           ))}
         </div>
       )}
 
       {pages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-3">
-          <Button3D size="sm" variant="steel" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button3D>
+          <Button3D size="sm" variant="neutral" disabled={page <= 1} onClick={() => setPage(page - 1)}>Prev</Button3D>
           <span className="font-mono text-xs text-ink-mute">{page} / {pages}</span>
-          <Button3D size="sm" variant="steel" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</Button3D>
+          <Button3D size="sm" variant="neutral" disabled={page >= pages} onClick={() => setPage(page + 1)}>Next</Button3D>
         </div>
       )}
     </div>
