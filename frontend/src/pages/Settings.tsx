@@ -5,6 +5,7 @@ import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
 import { ErrorBox, Field, Input, Panel, Pill, Skeleton, errorText, useToast } from "../components/ui/kit";
 import { Card } from "../components/ui/Card";
+import { MoonIcon, ThemeChooser } from "../components/ui/ThemeToggle";
 import { api, tokenStore } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { t, useLanguage, type Lang } from "../lib/i18n";
@@ -166,6 +167,10 @@ export default function Settings() {
     <div className="space-y-6">
       <PageHeader kicker="Configuration" title="Settings" icon={<GearIcon size={28} />} />
       <Language />
+      <Panel title="Appearance" icon={<MoonIcon size={18} />}>
+        <p className="mb-4 text-sm text-ink-dim">{t("Dark mode is easier on the eyes on night shift. This choice is kept on this device.")}</p>
+        <ThemeChooser />
+      </Panel>
       {can("admin", "supervisor") && <Integrations />}
       <Password />
     </div>

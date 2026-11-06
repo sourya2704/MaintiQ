@@ -160,7 +160,7 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           <span className="absolute inset-0 translate-y-1.5 rounded-full bg-rust-deep" />
           <span
             className={`absolute inset-0 grid place-items-center rounded-full border-2 transition-colors ${
-              recording ? "border-[#7a1a12] bg-alert" : "border-rust-deep bg-rust"
+              recording ? "border-alert-deep bg-alert" : "border-rust-deep bg-rust"
             }`}
           >
             {recording ? <StopIcon size={44} className="text-cream" /> : <MicIcon size={46} className="text-cream" />}

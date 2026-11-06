@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { FLOOR, MachineMesh, type MachineVisual } from "./MachineModel";
 import { prefersReducedMotion, scrollState } from "./shared";
 import { Studio } from "./Studio";
+import { useTheme } from "../../lib/theme";
 
 function ScrollTurn({ children }: { children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
@@ -19,15 +20,16 @@ function ScrollTurn({ children }: { children: React.ReactNode }) {
 
 /** Interactive single-machine model: drag to orbit, scroll the page to turn it. */
 export default function MachineViewer({ className = "", ...visual }: MachineVisual & { className?: string }) {
+  const dark = useTheme().theme === "dark";
   return (
     <div className={className}>
       <Canvas camera={{ position: [3.6, 1.9, 4.2], fov: 38 }} dpr={[1, 2]} shadows gl={{ antialias: true }}>
-        <color attach="background" args={["#e6eaee"]} />
+        <color attach="background" args={[dark ? "#121920" : "#e6eaee"]} />
         <Studio shadowExtent={4} />
         <ScrollTurn>
           <MachineMesh {...visual} />
         </ScrollTurn>
-        <ContactShadows position={[0, FLOOR + 0.001, 0]} opacity={0.45} scale={7} blur={2.2} far={2} color="#3d2f22" />
+        <ContactShadows position={[0, FLOOR + 0.001, 0]} opacity={0.45} scale={7} blur={2.2} far={2} color={dark ? "#000000" : "#3d2f22"} />
         <OrbitControls
           enablePan={false}
           enableZoom={false}

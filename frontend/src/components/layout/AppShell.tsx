@@ -18,6 +18,7 @@ import {
   MicIcon,
   XIcon,
 } from "../icons/MachineIcons";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 type NavEntry = { to: string; label: string; icon: (p: { size?: number; className?: string }) => ReactNode; end?: boolean };
 
@@ -186,7 +187,7 @@ export default function AppShell(): ReactNode {
 
   return (
     <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-espresso p-4 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-cream/5 bg-espresso p-4 lg:flex">
         <div className="mb-8 px-1 pt-1">
           <Logo light />
         </div>
@@ -203,7 +204,7 @@ export default function AppShell(): ReactNode {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -20, opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="absolute inset-x-3 top-3 rounded-xl bg-card p-3 shadow-xl"
+              className="absolute inset-x-3 top-3 rounded-xl border border-line bg-card p-3 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-2 flex justify-end">
@@ -230,13 +231,16 @@ export default function AppShell(): ReactNode {
             <Logo compact />
           </div>
           <span className="hidden text-sm font-medium text-ink-dim lg:block">{user?.organization?.name}</span>
-          <button
-            aria-label={t("Account")}
-            onClick={() => setOpen(true)}
-            className="grid h-9 w-9 place-items-center rounded-full bg-espresso text-xs font-bold text-cream lg:hidden"
-          >
-            {initials}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              aria-label={t("Account")}
+              onClick={() => setOpen(true)}
+              className="grid h-9 w-9 place-items-center rounded-full bg-espresso text-xs font-bold text-cream ring-1 ring-cream/10 lg:hidden"
+            >
+              {initials}
+            </button>
+          </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-10">
           <Outlet />

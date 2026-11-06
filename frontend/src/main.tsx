@@ -7,6 +7,7 @@ import { ToastProvider } from "./components/ui/kit";
 import { ApiError, tokenStore } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
 import { LanguageProvider } from "./lib/i18n";
+import { ThemeProvider } from "./lib/theme";
 import "./index.css";
 
 // Visitors on the public site: start downloading the website and its 3D scene right away,
@@ -28,16 +29,18 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <LanguageProvider>
-            <ToastProvider>
-              <App />
-            </ToastProvider>
-          </LanguageProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <LanguageProvider>
+              <ToastProvider>
+                <App />
+              </ToastProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

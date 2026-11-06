@@ -43,9 +43,19 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
       - key: SEED_DEMO
-        value: "true"        # creates the fictional demo plant on first start
+        value: "false"       # "true" creates the older sample plant (Narmada Steel) on start
       - key: SEED_PASSWORD
-        sync: false          # choose a password for the demo accounts
+        sync: false          # password for the sample plant accounts, if SEED_DEMO is on
+      - key: SHOWCASE_RESET
+        value: "false"       # "true": on the next start, wipe ALL data once and create the showcase plant
+      - key: SHOWCASE_ADMIN_PASSWORD
+        sync: false
+      - key: SHOWCASE_SUPERVISOR_PASSWORD
+        sync: false
+      - key: SHOWCASE_TECH1_PASSWORD
+        sync: false
+      - key: SHOWCASE_TECH2_PASSWORD
+        sync: false
 
 databases:
   - name: mantiq-db

@@ -16,8 +16,8 @@ import { Button3D } from "./Button3D";
 
 // Solid tinted labels: readable at a glance, no outline or status dot.
 const toneClasses: Record<Tone, string> = {
-  ok: "text-[#256238] bg-ok/15",
-  warn: "text-[#8a5a12] bg-warn/15",
+  ok: "text-ok-ink bg-ok/15",
+  warn: "text-warn-ink bg-warn/15",
   alert: "text-alert bg-alert/12",
   brass: "text-brass-deep bg-brass/12",
   rust: "text-rust-deep bg-rust/12",

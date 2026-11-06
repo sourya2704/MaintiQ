@@ -86,7 +86,7 @@ export default function Incidents() {
             </Select>
           ))}
           <label className="flex h-10 items-center gap-2 rounded-lg border border-line bg-sunk/80 px-3 text-sm text-ink-dim">
-            <input type="checkbox" checked={get("mine") === "true"} onChange={(e) => setParam("mine", e.target.checked ? "true" : "")} className="accent-[#2e5e8c]" />
+            <input type="checkbox" checked={get("mine") === "true"} onChange={(e) => setParam("mine", e.target.checked ? "true" : "")} className="accent-rust" />
             {t("Mine only")}
           </label>
         </div>

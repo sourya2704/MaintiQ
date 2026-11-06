@@ -29,6 +29,10 @@
   --color-ok: #2f7d4a;
   --color-warn: #b7791f;
   --color-alert: #b42318;
+  /* text on tinted status backgrounds, and the pressed edge of red buttons */
+  --color-ok-ink: #256238;
+  --color-warn-ink: #8a5a12;
+  --color-alert-deep: #7a1a12;
 
   --font-display: "Barlow Condensed", "Barlow", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-sans: "Barlow", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -37,6 +41,40 @@
 
 :root {
   color-scheme: light;
+}
+
+/* Dark: blue-graphite, like a control room at night. Never pure black; surfaces get
+   lighter as they rise, accents are lifted a step so they read on dark grey, and
+   shadows give way to borders. --color-espresso/--color-cream keep their meaning
+   (a dark band with light text) so headers and footers stay the darkest layer. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #0f1419;
+  --color-sunk: #0b0f13;
+  --color-card: #161d24;
+  --color-card-2: #1c242c;
+  --color-line: #29323c;
+  --color-line-strong: #3a4552;
+
+  --color-ink: #e4e9ee;
+  --color-ink-dim: #b0bbc6;
+  --color-ink-mute: #8492a0;
+
+  --color-rust: #4b82ba;
+  --color-rust-deep: #2f5c88;
+  --color-brass: #dca54c;
+  --color-brass-deep: #eabb6c;
+  --color-taupe: #8d99a6;
+  --color-espresso: #090c10;
+  --color-cream: #edf1f4;
+  --color-highlight: #a9cbec;
+
+  --color-ok: #4caf6e;
+  --color-warn: #e0a43a;
+  --color-alert: #e5544a;
+  --color-ok-ink: #86d6a0;
+  --color-warn-ink: #f1c47c;
+  --color-alert-deep: #8e261d;
 }
 
 html,
@@ -54,6 +92,15 @@ body {
   border: 1px solid var(--color-line);
   box-shadow: 0 1px 2px rgb(26 33 41 / 0.06);
 }
+:root[data-theme="dark"] .surface {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+/* switching themes fades colours instead of flashing */
+:root.theme-fade,
+:root.theme-fade * {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease !important;
+}
 
 /* diagonal tape used only for safety and destructive contexts */
 .hazard-stripe {
@@ -67,7 +114,7 @@ body {
 }
 
 ::selection {
-  background: rgb(160 82 45 / 0.25);
+  background: rgb(46 94 140 / 0.25);
 }
 
 ::-webkit-scrollbar {

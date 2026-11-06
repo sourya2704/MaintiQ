@@ -4,6 +4,15 @@
  * simply shows in English, so new screens never break.
  */
 export const HI: Record<string, string> = {
+  // ------------------------------------------------------------ appearance
+  Appearance: "दिखावट",
+  Light: "हल्का",
+  Dark: "गहरा",
+  "Match device": "डिवाइस के अनुसार",
+  "Switch to dark mode": "डार्क मोड चालू करें",
+  "Switch to light mode": "लाइट मोड चालू करें",
+  "Dark mode is easier on the eyes on night shift. This choice is kept on this device.":
+    "रात की शिफ्ट में डार्क मोड आँखों के लिए आरामदायक है। यह चुनाव इसी डिवाइस पर सहेजा जाता है।",
   // ------------------------------------------------------------ sign in / register
   "Sign in": "साइन इन",
   "Set up your plant": "अपना प्लांट सेट करें",

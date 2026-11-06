@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { FLOOR, MachineMesh, type MachineKind } from "./MachineModel";
 import { MAT, statusColor } from "./shared";
 import { Studio } from "./Studio";
+import { useTheme } from "../../lib/theme";
 
 export interface FloorMachine {
   id: string;
@@ -136,12 +137,17 @@ export default function PlantFloor({
     [machines, cols, rows],
   );
   const extent = Math.max(cols, rows) * spacing * 0.5;
+  const dark = useTheme().theme === "dark";
+  const bg = dark ? "#121920" : "#e6eaee";
+  useEffect(() => {
+    MAT.concrete.color.set(dark ? "#3b434c" : "#c7ccd1");
+  }, [dark]);
 
   return (
     <div ref={anchor} className={className}>
       <Canvas camera={{ position: [0, 10, 12], fov: 42 }} dpr={[1, 1.75]} shadows gl={{ antialias: true }}>
-        <color attach="background" args={["#e6eaee"]} />
-        <fog attach="fog" args={["#e6eaee", 16, 40]} />
+        <color attach="background" args={[bg]} />
+        <fog attach="fog" args={[bg, 16, 40]} />
         <Studio shadowExtent={extent + 4} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, GROUND - 0.002, 0]} material={MAT.concrete} receiveShadow>
           <planeGeometry args={[80, 80]} />
@@ -151,10 +157,10 @@ export default function PlantFloor({
           infiniteGrid
           cellSize={1}
           cellThickness={0.5}
-          cellColor="#c3cad1"
+          cellColor={dark ? "#26303a" : "#c3cad1"}
           sectionSize={spacing}
           sectionThickness={0.9}
-          sectionColor="#a5afb9"
+          sectionColor={dark ? "#3a4654" : "#a5afb9"}
           fadeDistance={34}
           fadeStrength={1.5}
         />

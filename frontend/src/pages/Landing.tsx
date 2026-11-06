@@ -16,6 +16,8 @@ import { Button3D } from "../components/ui/Button3D";
 import { ErrorBox, Field, Input, Textarea } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { t, useLanguage } from "../lib/i18n";
+import { useTheme } from "../lib/theme";
+import { ThemeToggle } from "../components/ui/ThemeToggle";
 
 const LandingScene = lazy(() => import("../components/three/LandingScene"));
 
@@ -150,6 +152,8 @@ export default function Landing() {
   const { lang, setLang } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
+  const { theme } = useTheme();
+  const night = theme === "dark";
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", on, { passive: true });
@@ -158,8 +162,14 @@ export default function Landing() {
 
   return (
     <div className="relative">
-      <Suspense fallback={<div className="fixed inset-0 bg-gradient-to-b from-[#b9cddd] via-[#cfdbe6] to-[#e9eef2]" />}>
-        <LandingScene state={scene} onIntroDone={() => setArrived(true)} className="fixed inset-0 -z-0" />
+      <Suspense
+        fallback={
+          <div
+            className={`fixed inset-0 bg-gradient-to-b ${night ? "from-[#03050c] via-[#0a1630] to-[#0b1322]" : "from-[#b9cddd] via-[#cfdbe6] to-[#e9eef2]"}`}
+          />
+        }
+      >
+        <LandingScene state={scene} night={night} onIntroDone={() => setArrived(true)} className="fixed inset-0 -z-0" />
       </Suspense>
       {/* soft dark fade at the bottom of the view keeps text cards and the footer readable */}
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-48 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
@@ -185,6 +195,7 @@ export default function Landing() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button onClick={() => setLang(lang === "en" ? "hi" : "en")} lang={lang === "en" ? "hi" : "en"} className="rounded-md px-2 py-1 text-sm font-semibold text-ink-dim hover:bg-sunk">
               {lang === "en" ? "हिन्दी" : "English"}
             </button>

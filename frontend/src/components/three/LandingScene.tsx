@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import { MachineMesh, type MachineKind } from "./MachineModel";
+import { Bloom, bloomTarget, LightPools, LitWindows, NIGHT_FOG, NightSky } from "./Night";
 import { FLOOR, M } from "./parts";
 import { prefersReducedMotion } from "./shared";
 import { Studio } from "./Studio";
@@ -58,6 +59,8 @@ const INTRO: Key[] = [
   { pos: [-9, 2.6, 0], look: [0, 2.2, 0] },
   STOPS[0],
 ];
+// At night the arrival opens on the sky, with the moon and stars, before tipping down to the plant.
+const NIGHT_INTRO: Key[] = [{ pos: INTRO[0].pos, look: [2, 36, -42] }, ...INTRO.slice(1)];
 const INTRO_SECONDS = 7;
 const GATE_OPEN = [0.5, 0.72]; // part of the intro during which the shutter rolls up
 
@@ -83,7 +86,7 @@ const prepared = { ready: false };
 const SKIP_SECONDS = 1.2;
 const HOLD_AT = 0.45; // the arrival waits outside the gate if the hall is not prepared yet
 
-function Rig({ state, onIntroDone }: { state: SceneState; onIntroDone: () => void }) {
+function Rig({ state, onIntroDone, night }: { state: SceneState; onIntroDone: () => void; night: boolean }) {
   const { camera } = useThree();
   const reduced = prefersReducedMotion();
   const look = useRef(new THREE.Vector3(...INTRO[0].look));
@@ -99,7 +102,7 @@ function Rig({ state, onIntroDone }: { state: SceneState; onIntroDone: () => voi
       let next = reduced && prepared.ready ? 1 : state.intro.current + Math.min(dt, 0.1) * rate;
       if (!prepared.ready) next = Math.min(next, HOLD_AT);
       state.intro.current = Math.min(1, next);
-      samplePath(INTRO, state.intro.current, pos, tgt);
+      samplePath(night ? NIGHT_INTRO : INTRO, state.intro.current, pos, tgt);
       camera.position.copy(pos);
       look.current.copy(tgt);
     } else {
@@ -119,7 +122,7 @@ function Rig({ state, onIntroDone }: { state: SceneState; onIntroDone: () => voi
 
 // ------------------------------------------------------------------ outside: sky, clouds, yard
 
-function Clouds({ intro }: { intro: { current: number } }) {
+function Clouds({ intro, night }: { intro: { current: number }; night: boolean }) {
   const tex = cloudTexture();
   const puffs = useMemo(() => {
     const rnd = (i: number) => (Math.sin(i * 91.7) * 43758.5453) % 1;
@@ -132,6 +135,11 @@ function Clouds({ intro }: { intro: { current: number } }) {
   }, []);
   const group = useRef<THREE.Group>(null);
   const mats = useMemo(() => puffs.map(() => new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.95 })), [puffs, tex]);
+  useEffect(() => {
+    // moonlit clouds: blue-grey and thinner, so stars show between them
+    for (const m of mats) m.color.set(night ? "#344262" : "#ffffff");
+  }, [mats, night]);
+  const peak = night ? 0.28 : 0.95;
   useFrame(() => {
     const t = intro.current;
     const part = smooth(clamp01((t - 0.08) / 0.45)); // clouds slide apart early in the arrival
@@ -142,7 +150,7 @@ function Clouds({ intro }: { intro: { current: number } }) {
         c.position.set(p.x + part * 10, p.y + part * 4, p.z + Math.sign(p.z || 1) * part * 30);
       });
     }
-    mats.forEach((m) => (m.opacity = 0.95 * (1 - smooth(clamp01((t - 0.3) / 0.35)))));
+    mats.forEach((m) => (m.opacity = peak * (1 - smooth(clamp01((t - 0.3) / 0.35)))));
   });
   return (
     <group ref={group}>
@@ -153,10 +161,15 @@ function Clouds({ intro }: { intro: { current: number } }) {
   );
 }
 
-function Yard() {
+function Yard({ night }: { night: boolean }) {
   const asphalt = useMemo(() => new THREE.MeshStandardMaterial({ color: "#6d7378", roughness: 0.95 }), []);
   const grass = useMemo(() => new THREE.MeshStandardMaterial({ color: "#7d8f6a", roughness: 1 }), []);
   const line = useMemo(() => new THREE.MeshBasicMaterial({ color: "#e8e3d0" }), []);
+  useEffect(() => {
+    line.color.set(night ? "#5c6170" : "#e8e3d0"); // unlit paint would glow at night otherwise
+    grass.color.set(night ? "#3a4636" : "#7d8f6a");
+    asphalt.color.set(night ? "#3c4146" : "#6d7378");
+  }, [night, line, grass, asphalt]);
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[20, Y0 - 0.02, 0]} material={grass}>
@@ -182,7 +195,7 @@ function Yard() {
 
 // ------------------------------------------------------------------ the building
 
-function Shell({ intro }: { intro: { current: number } }) {
+function Shell({ intro, night }: { intro: { current: number }; night: boolean }) {
   const m = M();
   const wall = useMemo(() => {
     const tex = corrugatedTexture("#8796a3").clone();
@@ -212,6 +225,11 @@ function Shell({ intro }: { intro: { current: number } }) {
   const slab = useMemo(() => new THREE.MeshStandardMaterial({ map: slabTexture(), roughness: 0.55, metalness: 0.05 }), []);
   const sign = useMemo(() => new THREE.MeshBasicMaterial({ map: signTexture("MANTIQ", "Maintenance memory") }), []);
   const yellow = useMemo(() => new THREE.MeshBasicMaterial({ color: "#d9a21b" }), []);
+  const lamp = useMemo(() => new THREE.MeshBasicMaterial({ color: new THREE.Color("#ffe2b0").multiplyScalar(4) }), []);
+  useEffect(() => {
+    sign.color.setScalar(night ? 2.4 : 1); // backlit sign: the lettering blooms, the dark panel does not
+    yellow.color.set(night ? "#8a6a1e" : "#d9a21b");
+  }, [night, sign, yellow]);
   const shutter = useRef<THREE.Mesh>(null);
 
   useFrame(() => {
@@ -286,6 +304,13 @@ function Shell({ intro }: { intro: { current: number } }) {
       <mesh position={[GATE_X - 1.2, Y0 + gateH + 0.05, 0]} material={m.toolGrey}>
         <boxGeometry args={[2.4, 0.1, gateW + 1]} />
       </mesh>
+      {/* wall-pack lamps over the gate: they only show at night */}
+      {night &&
+        [-1, 1].map((s) => (
+          <mesh key={s} position={[GATE_X - 0.18, Y0 + gateH + 0.15, s * (gateW / 2 + 1.1)]} material={lamp}>
+            <boxGeometry args={[0.2, 0.22, 0.6]} />
+          </mesh>
+        ))}
       {/* bollards either side of the gate */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[GATE_X - 1.5, Y0 + 0.6, s * (gateW / 2 + 0.6)]} material={m.forkYellow}>
@@ -297,7 +322,7 @@ function Shell({ intro }: { intro: { current: number } }) {
 }
 
 /** Portal frames, purlins, high-bay lights and pallet racking: drawn as instances. */
-function Structure() {
+function Structure({ night }: { night: boolean }) {
   const m = M();
   const bays = useMemo(() => {
     const out: number[] = [];
@@ -305,6 +330,11 @@ function Structure() {
     return out;
   }, []);
   const lensMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: new THREE.Color("#fff7e6"), emissiveIntensity: 1.6 }), []);
+  useEffect(() => {
+    // at night the lamps run hot enough to bloom, with a warmer sodium-white tint
+    lensMat.emissive.set(night ? "#ffd59a" : "#fff7e6");
+    lensMat.emissiveIntensity = night ? 6 : 1.6;
+  }, [night, lensMat]);
   const pitch = Math.atan2(RIDGE - EAVES, HALF_W);
   const rafter = Math.hypot(HALF_W, RIDGE - EAVES);
   return (
@@ -332,6 +362,7 @@ function Structure() {
         <cylinderGeometry args={[0.46, 0.46, 0.02, 16]} />
         {bays.flatMap((x) => [-5, 0, 5].map((z) => <Instance key={`l${x}${z}`} position={[x + 3.5, Y0 + EAVES - 1.36, z]} />))}
       </Instances>
+      {night && <LightPools y={Y0 + 0.012} spots={bays.flatMap((x) => [-5, 0, 5].map((z) => [x + 3.5, z] as [number, number]))} />}
       {/* pallet racking along the back wall */}
       <Instances limit={64} material={m.safetyOrange}>
         <boxGeometry args={[0.1, 5, 0.1]} />
@@ -394,6 +425,8 @@ function Prepared({ children }: { children: ReactNode }) {
     const wasVisible = parent?.visible ?? true;
     if (parent) parent.visible = true; // compile() skips hidden objects
     group.updateMatrixWorld(true);
+    const prevTarget = gl.getRenderTarget();
+    if (bloomTarget.current) gl.setRenderTarget(bloomTarget.current); // compile for where it will be drawn
     try {
       gl.compile(group, camera, scene); // the scene supplies the lights the shaders are built for
       group.traverse((o) => {
@@ -406,6 +439,7 @@ function Prepared({ children }: { children: ReactNode }) {
         }
       });
     } finally {
+      gl.setRenderTarget(prevTarget);
       if (parent) parent.visible = wasVisible;
     }
   }, [gl, scene, camera]);
@@ -435,28 +469,51 @@ function Floor({ small }: { small: boolean }) {
   );
 }
 
-export default function LandingScene({ state, onIntroDone, className = "" }: { state: SceneState; onIntroDone: () => void; className?: string }) {
+export default function LandingScene({
+  state,
+  onIntroDone,
+  night = false,
+  className = "",
+}: {
+  state: SceneState;
+  onIntroDone: () => void;
+  night?: boolean;
+  className?: string;
+}) {
   const small = typeof window !== "undefined" && window.innerWidth < 768;
   const maxDpr = Math.min(small ? 1.25 : 1.5, typeof window !== "undefined" ? window.devicePixelRatio : 1);
   // Start at 1x for a fast first frame; PerformanceMonitor raises it when the device keeps up.
   const [dpr, setDpr] = useState(1);
+  // Bloom is dropped for good if the device cannot keep up with it.
+  const [bloomOk, setBloomOk] = useState(true);
   useEffect(() => () => void (prepared.ready = false), []);
   return (
     <div className={className} aria-hidden>
       <Canvas camera={{ position: INTRO[0].pos, fov: small ? 62 : 48, near: 0.1, far: 260 }} dpr={dpr} gl={{ antialias: !small, powerPreference: "high-performance" }}>
         {/* drop resolution when frames slow down, raise it again when there is headroom */}
-        <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(maxDpr)} flipflops={3} onFallback={() => setDpr(1)} />
-        <color attach="background" args={["#cfdbe6"]} />
-        <fog attach="fog" args={["#cfdbe6", 40, 150]} />
+        <PerformanceMonitor
+          onDecline={() => (dpr > 1 ? setDpr(1) : setBloomOk(false))}
+          onIncline={() => setDpr(maxDpr)}
+          flipflops={3}
+          onFallback={() => {
+            setDpr(1);
+            setBloomOk(false);
+          }}
+        />
+        <color attach="background" args={[night ? NIGHT_FOG : "#cfdbe6"]} />
+        <fog attach="fog" args={night ? [NIGHT_FOG, 30, 140] : ["#cfdbe6", 40, 150]} />
         {/* studio lights plus a reflection environment rendered once, so metal reads as metal; no shadow maps */}
-        <Studio shadows={false} />
-        <hemisphereLight args={["#f4f8fb", "#7f8a93", 0.5]} />
-        <Clouds intro={state.intro} />
-        <Yard />
-        <Shell intro={state.intro} />
-        <Structure />
+        <Studio shadows={false} night={night} />
+        <hemisphereLight args={night ? ["#2a3654", "#0c0f14", 0.35] : ["#f4f8fb", "#7f8a93", 0.5]} />
+        {night && <NightSky small={small} centerX={(GATE_X + END_X) / 2} />}
+        {night && <LitWindows fromX={GATE_X} toX={END_X} halfW={HALF_W} y={Y0 + EAVES - 1.3} />}
+        <Clouds intro={state.intro} night={night} />
+        <Yard night={night} />
+        <Shell intro={state.intro} night={night} />
+        <Structure night={night} />
         <Floor small={small} />
-        <Rig state={state} onIntroDone={onIntroDone} />
+        <Rig state={state} onIntroDone={onIntroDone} night={night} />
+        {night && bloomOk && <Bloom intensity={small ? 0.9 : 1.15} />}
       </Canvas>
     </div>
   );

@@ -9,14 +9,14 @@ const faces: Record<Variant, string> = {
   primary: "bg-rust text-cream border-rust-deep",
   dark: "bg-espresso text-cream border-black/40",
   neutral: "bg-card text-ink border-line-strong",
-  danger: "bg-alert text-cream border-[#7a1a12]",
+  danger: "bg-alert text-cream border-alert-deep",
   ghost: "bg-transparent text-ink-dim border-transparent hover:bg-card-2 hover:text-ink",
 };
 const depths: Record<Variant, string> = {
   primary: "bg-rust-deep",
   dark: "bg-black/70",
   neutral: "bg-line-strong",
-  danger: "bg-[#7a1a12]",
+  danger: "bg-alert-deep",
   ghost: "",
 };
 const sizes: Record<Size, string> = {
