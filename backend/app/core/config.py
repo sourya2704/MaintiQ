@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 60 * 12
     auth_rate_limit_per_minute: int = 10
+    login_failures_before_block: int = 10  # failed sign-ins per account in 5 min before a short block
 
     # Audio storage and retention
     storage_dir: Path = Path("storage")
