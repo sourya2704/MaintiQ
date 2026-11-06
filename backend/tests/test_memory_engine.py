@@ -70,3 +70,13 @@ def test_search_without_machine_has_no_machine_type_rationale(client):
     res = client.get("/api/memory/search", headers=login_seed(client), params={"q": "pump seal leaking"}).json()
     assert res["results"]
     assert all(not any("machine type" in why for why in r["rationale"]) for r in res["results"])
+
+
+def test_asset_code_and_hindi_words_are_searchable(client):
+    from app.services.memory_engine import query_terms
+
+    assert query_terms("M-104 पंप से रिसाव हो रहा है") == ["m-104", "पंप", "रिसाव"]
+    seed()
+    res = client.get("/api/memory/search", headers=login_seed(client), params={"q": "P-201 status"}).json()
+    assert res["results"] and all(r["machine"]["asset_code"] == "P-201" for r in res["results"])
+    assert any("p-201" in x for x in res["results"][0]["rationale"])
