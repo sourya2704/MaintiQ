@@ -103,7 +103,8 @@ async def import_machines(
 ):
     """Bulk-create machines from a CSV asset list. Run with dry_run=true first to preview."""
     report = machine_import.import_machines(
-        db, user.organization_id, user.id, await file.read(), on_conflict=on_conflict, dry_run=dry_run,
+        db, user.organization_id, user.id, await file.read(machine_import.MAX_BYTES + 1),
+        on_conflict=on_conflict, dry_run=dry_run,
     )
     if dry_run:
         db.rollback()

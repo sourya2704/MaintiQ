@@ -267,3 +267,10 @@ def test_integration_status_is_transparent(client, auth, settings):
     assert "super-secret" not in json.dumps(body)
     prisma = next(p for p in body["providers"] if p["provider"] == "prisma")
     assert prisma["mode"] == "mock" and prisma["label"].startswith("MOCK") and not prisma["live_ready"]
+
+
+def test_oversized_audio_rejected(client, auth, settings):
+    settings.max_audio_bytes = 1024
+    m = make_machine(client, auth)
+    r = upload(client, auth, m["id"], data=wav_bytes(2))
+    assert r.status_code == 413 and r.json()["error"]["code"] == "audio_too_large"
