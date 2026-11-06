@@ -27,6 +27,7 @@ from app.services import audit, machine_import
 
 router = APIRouter(prefix="/api/machines", tags=["machines"])
 
+OPTIONAL_FIELDS = ("manufacturer", "model", "location")
 OPEN_STATES = (ResolutionStatus.open, ResolutionStatus.monitoring, ResolutionStatus.unresolved)
 Lead = Annotated[User, Depends(require_roles(Role.admin, Role.supervisor))]
 
@@ -103,7 +104,8 @@ async def import_machines(
 ):
     """Bulk-create machines from a CSV asset list. Run with dry_run=true first to preview."""
     report = machine_import.import_machines(
-        db, user.organization_id, user.id, await file.read(), on_conflict=on_conflict, dry_run=dry_run,
+        db, user.organization_id, user.id, await file.read(machine_import.MAX_BYTES + 1),
+        on_conflict=on_conflict, dry_run=dry_run,
     )
     if dry_run:
         db.rollback()
@@ -163,7 +165,9 @@ def get_machine(machine_id: uuid.UUID, db: DB, user: CurrentUser,
 @router.patch("/{machine_id}", response_model=MachineOut)
 def update_machine(machine_id: uuid.UUID, body: MachineUpdate, db: DB, user: CurrentUser):
     machine = get_machine_for_user(db, user, machine_id)
-    changes = body.model_dump(exclude_unset=True, exclude_none=True)
+    # Optional details can be cleared with null; required fields ignore null.
+    changes = {k: v for k, v in body.model_dump(exclude_unset=True).items()
+               if v is not None or k in OPTIONAL_FIELDS}
     for k, v in changes.items():
         setattr(machine, k, v)
     try:

@@ -55,3 +55,15 @@ def test_cross_organization_machine_access_denied(client, auth):
     assert client.get(f"/api/machines/{m['id']}", headers=other).status_code == 404
     assert client.patch(f"/api/machines/{m['id']}", headers=other, json={"name": "pwned"}).status_code == 404
     assert client.get("/api/machines", headers=other).json()["total"] == 0
+
+
+def test_machine_optional_details_can_be_cleared(client, auth):
+    from tests.conftest import make_machine
+
+    m = make_machine(client, auth)
+    client.patch(f"/api/machines/{m['id']}", headers=auth, json={"manufacturer": "ABB", "location": "Bay A"})
+    r = client.patch(f"/api/machines/{m['id']}", headers=auth,
+                     json={"manufacturer": None, "location": None, "name": None})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["manufacturer"] is None and body["location"] is None and body["name"] == m["name"]

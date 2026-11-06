@@ -1,12 +1,12 @@
 from datetime import timedelta
 
 from fastapi import APIRouter
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import DB, CurrentUser
 from app.db.base import utcnow
-from app.models import Incident, Machine
+from app.models import Incident, Machine, MaintenanceOutcome
 from app.models.enums import ProcessingStatus, ResolutionStatus, ReviewStatus
 from app.schemas.incidents import IncidentListItem
 
@@ -55,8 +55,13 @@ def summary(db: DB, user: CurrentUser):
                                      inc.c.processing_status == ProcessingStatus.awaiting_review),
             "processing_failed": count(inc.c.processing_status.in_(FAILED)),
             "urgent_open": count(inc.c.urgency == "urgent", inc.c.resolution_status.in_(OPEN)),
-            "resolved_last_30_days": count(inc.c.resolution_status == ResolutionStatus.resolved,
-                                           inc.c.updated_at >= since_30),
+            # By the outcome's resolve date: editing an old incident must not count it again.
+            "resolved_last_30_days": count(
+                inc.c.resolution_status == ResolutionStatus.resolved,
+                exists().where(MaintenanceOutcome.incident_id == inc.c.id,
+                               MaintenanceOutcome.resolution_status == ResolutionStatus.resolved,
+                               MaintenanceOutcome.resolved_at >= since_30),
+            ),
             "reported_last_30_days": count(inc.c.occurred_at >= since_30),
             "seed_records": count(inc.c.is_seed.is_(True)),
         },

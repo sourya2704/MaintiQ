@@ -25,7 +25,7 @@ from app.db.session import SessionLocal
 from app.models import AIProcessingJob, Incident
 from app.models.enums import AnalysisSource, JobStatus
 from app.services import audit, memory_engine
-from app.services.extraction import UNSAFE_ADVICE, parse_model_json
+from app.services.extraction import is_unsafe_advice, parse_model_json
 from app.services.pipeline import _finish
 from app.services.providers import evon
 from app.services.providers.base import CallMeta, ProviderError
@@ -352,7 +352,7 @@ def postprocess(guide: Guide, inc: Incident, history: list[dict]) -> dict:
 
     causes = []
     for c in guide.likely_causes:
-        if UNSAFE_ADVICE.search(c.cause):
+        if is_unsafe_advice(c.cause):
             warnings.append("Removed a cause entry that contained unsafe advice")
             continue
         refs = [r.strip().upper() for r in c.history_refs]
@@ -367,7 +367,7 @@ def postprocess(guide: Guide, inc: Incident, history: list[dict]) -> dict:
 
     steps = []
     for s in guide.steps:
-        if UNSAFE_ADVICE.search(" ".join([s.action, s.why, s.safety or ""])):
+        if is_unsafe_advice(" ".join([s.action, s.why, s.safety or ""])):
             warnings.append("Removed a step that conflicted with safety rules")
             continue
         steps.append(s.model_dump())
@@ -376,7 +376,7 @@ def postprocess(guide: Guide, inc: Incident, history: list[dict]) -> dict:
     for i, s in enumerate(steps, start=1):
         s["order"] = i
 
-    escalate = [e for e in guide.escalate_if if not UNSAFE_ADVICE.search(e)]
+    escalate = [e for e in guide.escalate_if if not is_unsafe_advice(e)]
     if detect_hazard(inc.transcript or "") and HAZARD_ESCALATION not in escalate:
         escalate.insert(0, HAZARD_ESCALATION)
     do_not = list(guide.do_not)
@@ -387,7 +387,7 @@ def postprocess(guide: Guide, inc: Incident, history: list[dict]) -> dict:
         "summary": guide.summary,
         "likely_causes": causes,
         "steps": steps,
-        "parts_to_have": [p for p in guide.parts_to_have if not UNSAFE_ADVICE.search(p)],
+        "parts_to_have": [p for p in guide.parts_to_have if not is_unsafe_advice(p)],
         "escalate_if": escalate,
         "do_not": do_not,
         "confidence_notes": guide.confidence_notes,

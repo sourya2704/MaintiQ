@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import httpx
 
@@ -92,3 +93,46 @@ def test_hindi_and_hinglish_symptoms():
     assert detect_hazard("पैनल से धुआं निकल रहा है")
     assert not detect_hazard("धुआं नहीं है")
     assert tag_symptoms("motor bahut garam hai aur awaaz aa rahi hai") == ["overheating", "abnormal_noise"]
+
+
+def test_jobs_interrupted_by_restart_are_failed_and_retryable(client, auth):
+    from app.db.session import SessionLocal
+    from app.models import AIProcessingJob, Incident
+    from app.services.pipeline import recover_interrupted_jobs
+    from tests.conftest import make_machine
+
+    m = make_machine(client, auth)
+    inc = client.post("/api/incidents", headers=auth,
+                      data={"machine_id": m["id"], "transcript": "Pump is leaking at the seal"}).json()
+    with SessionLocal() as db:
+        row = db.get(Incident, uuid.UUID(inc["id"]))
+        row.processing_status = "analyzing"
+        db.add(AIProcessingJob(incident_id=row.id, provider="evon", task="extraction", model="evon-mock", mode="mock"))
+        db.commit()
+
+    assert recover_interrupted_jobs() == 1
+    after = client.get(f"/api/incidents/{inc['id']}", headers=auth).json()
+    assert after["processing_status"] == "analysis_failed"
+    assert client.post(f"/api/incidents/{inc['id']}/analyze", headers=auth).status_code == 202
+
+
+def test_evon_credentials_status_is_reported_honestly(client, auth, settings):
+    def evon():
+        return next(p for p in client.get("/api/settings/integrations", headers=auth).json()["providers"]
+                    if p["provider"] == "evon")
+
+    settings.evon_mode, settings.evon_base_url, settings.evon_api_key = "live", "https://evon.example.com/v1", ""
+    assert evon()["credentials_configured"] is False and evon()["live_ready"] is False
+    settings.evon_api_key = "key"
+    assert evon()["live_ready"] is True
+    settings.evon_base_url, settings.evon_api_key = "http://localhost:30000/v1", ""
+    assert evon()["credentials_configured"] is True
+
+
+def test_safety_filter_keeps_negated_advice():
+    from app.services.extraction import is_unsafe_advice
+
+    assert is_unsafe_advice("Bypass the interlock to test the motor")
+    assert is_unsafe_advice("Do not wait, bypass the interlock")
+    assert not is_unsafe_advice("Do not remove the guard while the shaft turns")
+    assert not is_unsafe_advice("Never bypass the safety interlock")

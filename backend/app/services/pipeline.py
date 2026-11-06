@@ -10,6 +10,7 @@ import logging
 import uuid
 from datetime import timedelta
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -145,6 +146,27 @@ def begin_analysis(db: Session, incident: Incident, actor_id: uuid.UUID | None) 
     )
     db.flush()
     return job
+
+
+def recover_interrupted_jobs() -> int:
+    """Fail jobs left running by a previous process (restart, deploy, free-plan sleep).
+
+    AI jobs run inside the web process, so after a restart nothing will ever finish them.
+    Marking them failed at startup lets users retry at once instead of waiting for the
+    stale-job timeout. Assumes a single API instance, as deployed on Render.
+    """
+    with SessionLocal() as db:
+        jobs = db.scalars(select(AIProcessingJob).where(AIProcessingJob.status == JobStatus.running)).all()
+        failed_state = {"transcription": ProcessingStatus.transcription_failed,
+                        "extraction": ProcessingStatus.analysis_failed}
+        running_state = {"transcription": ProcessingStatus.transcribing, "extraction": ProcessingStatus.analyzing}
+        for job in jobs:
+            _finish(job, error=ProviderError("interrupted", "The server restarted before this finished; retry it"))
+            inc = job.incident
+            if job.task in failed_state and inc.processing_status == running_state[job.task]:
+                inc.processing_status = failed_state[job.task]
+        db.commit()
+        return len(jobs)
 
 
 # --------------------------------------------------------------------------- workers

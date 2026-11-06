@@ -29,6 +29,13 @@ STOPWORDS = {
     "maybe", "might", "probably", "possibly", "check", "checked", "checking", "please", "ravi", "line", "start",
     "started", "time", "last", "again", "going", "got", "get", "need", "needs", "will", "would", "could", "should",
 }
+# Common Hindi function words; content words such as पंप or रिसाव are kept.
+HINDI_STOPWORDS = {
+    "और", "का", "की", "के", "को", "से", "में", "पर", "है", "हैं", "था", "थी", "थे", "हो", "रहा", "रही", "रहे",
+    "गया", "गई", "गए", "भी", "तो", "यह", "वह", "कुछ", "नहीं", "बहुत", "लेकिन", "मैंने", "हम", "अभी",
+}
+# Latin words, asset codes such as m-104 or p-201, and Devanagari words.
+WORD_RE = re.compile(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*|[\u0900-\u097F]+")
 NO_CONTENT_STATES = (ProcessingStatus.uploaded, ProcessingStatus.transcribing, ProcessingStatus.transcription_failed)
 MIN_CROSS_TYPE_TEXT_RANK = 0.05
 MAX_QUERY_TERMS = 40
@@ -46,11 +53,11 @@ class MemoryQuery:
 
 
 def query_terms(text: str) -> list[str]:
-    words = re.findall(r"[a-z][a-z0-9]{2,}", (text or "").lower())
+    words = WORD_RE.findall((text or "").lower())
     out, seen = [], set()
     for w in words:
-        w = w.strip("-")
-        if len(w) < 3 or w in STOPWORDS or w in seen:
+        is_code = "-" in w and any(c.isdigit() for c in w)
+        if (len(w) < 3 and not is_code) or w in STOPWORDS or w in HINDI_STOPWORDS or w in seen:
             continue
         seen.add(w)
         out.append(w)
@@ -67,13 +74,15 @@ TAG_WORDS = {w for tag in SYMPTOM_TAXONOMY for w in tag.split("_")}
 
 
 def _matched_terms(terms: list[str], candidate_text: str, limit: int = 5) -> list[str]:
-    cand = {_stem(w) for w in re.findall(r"[a-z][a-z0-9\-]{3,}", candidate_text.lower())}
-    return [t for t in terms if len(t) >= 4 and t not in TAG_WORDS and _stem(t) in cand][:limit]
+    words = WORD_RE.findall(candidate_text.lower())
+    cand = {_stem(w) for w in words} | set(words)
+    return [t for t in terms if (len(t) >= 4 or t in cand) and t not in TAG_WORDS and _stem(t) in cand][:limit]
 
 
 def find_related(db: Session, q: MemoryQuery) -> list[dict]:
     terms = query_terms(q.text)
-    tsquery = func.to_tsquery("english", " | ".join(terms)) if terms else None
+    # websearch_to_tsquery never fails on user text; "or" joins the terms.
+    tsquery = func.websearch_to_tsquery("english", " or ".join(terms)) if terms else None
 
     content_match = []
     if q.symptom_tags:

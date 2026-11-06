@@ -125,7 +125,9 @@ async def create_incident(
     incident.machine = machine
     stored = None
     if has_audio:
-        stored = storage.save_audio(user.organization_id, audio_file.filename, await audio_file.read())
+        # Read at most one byte past the limit so an oversized upload is rejected without loading it all.
+        content = await audio_file.read(get_settings().max_audio_bytes + 1)
+        stored = storage.save_audio(user.organization_id, audio_file.filename, content)
         incident.processing_status = ProcessingStatus.uploaded
     else:
         incident.transcript_original = manual

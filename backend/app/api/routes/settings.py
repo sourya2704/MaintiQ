@@ -33,6 +33,9 @@ def integrations(db: DB, user: CurrentUser):
     """Non-secret integration status, clearly separating live calls from mocks (FR-018)."""
     s = get_settings()
     key_set = bool(s.gnani_api_key)
+    # A self-hosted Evon on this machine needs no key; a remote endpoint does.
+    local_evon = any(h in s.evon_base_url for h in ("://localhost", "://127.0.0.1", "://0.0.0.0"))
+    evon_configured = bool(s.evon_api_key) or local_evon
 
     def provider(name: str, mode: str, model: str, endpoint: str, configured: bool, purpose: str):
         return {
@@ -51,7 +54,7 @@ def integrations(db: DB, user: CurrentUser):
             provider("prisma", s.prisma_mode, s.prisma_model, s.gnani_base_url.rstrip("/") + "/stt/v3", key_set,
                      "Speech-to-text"),
             provider("evon", s.evon_mode, s.evon_model, s.evon_base_url.rstrip("/") + "/chat/completions",
-                     True, "Structured incident extraction"),
+                     evon_configured, "Structured incident extraction"),
             provider("timbre", s.timbre_mode, s.timbre_model, s.gnani_base_url.rstrip("/") + "/api/v1/tts/inference",
                      key_set, "Text-to-speech (optional)"),
         ],
