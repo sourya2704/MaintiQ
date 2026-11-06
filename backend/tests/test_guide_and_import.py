@@ -145,6 +145,8 @@ def test_csv_import_validation_and_permissions(client, auth):
     assert bad.status_code == 422 and bad.json()["error"]["code"] == "missing_columns"
     assert _upload(client, auth, b"").status_code == 400
     assert "asset_code" in client.get("/api/machines/import/template", headers=auth).text
-    client.post("/api/users", headers=auth, json={"name": "T", "email": "t@acme.example.com", "password": "Password123!"})
-    tok = client.post("/api/auth/login", json={"email": "t@acme.example.com", "password": "Password123!"}).json()["access_token"]
+    from tests.conftest import add_worker
+
+    _, _, tech_headers = add_worker(client, auth, name="T")
+    tok = tech_headers["Authorization"].split()[1]
     assert _upload(client, {"Authorization": f"Bearer {tok}"}, CSV).status_code == 403

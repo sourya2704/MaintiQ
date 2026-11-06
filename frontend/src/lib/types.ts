@@ -27,8 +27,10 @@ export interface User {
   role: Role;
   is_active: boolean;
   preferred_language?: "en" | "hi" | null;
+  last_login_at?: string | null;
+  must_change_password?: boolean;
   created_at: string;
-  organization?: { id: string; name: string };
+  organization?: { id: string; name: string; slug?: string | null };
 }
 
 export interface Machine {
@@ -333,4 +335,14 @@ export interface PhotoAsset {
   mime_type: string;
   size_bytes: number;
   created_at: string;
+}
+
+export interface TeamMember extends User {
+  reports: number;
+}
+
+export interface AccountIssued {
+  user: TeamMember;
+  login_email: string;
+  temporary_password: string;
 }

@@ -20,6 +20,7 @@ from app.api.routes import (
     machines,
     memory,
     messages,
+    public,
     settings,
     users,
 )
@@ -104,7 +105,7 @@ def create_app() -> FastAPI:
                  int((time.perf_counter() - started) * 1000), request_id)
         return response
 
-    for r in (auth, users, machines, incidents, memory, messages, dashboard, settings):
+    for r in (auth, users, machines, incidents, memory, messages, dashboard, settings, public):
         app.include_router(r.router)
 
     @app.get("/api/health", tags=["health"])

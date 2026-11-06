@@ -36,6 +36,8 @@ class Organization(UUIDPk, Base):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # Short company name used in worker logins: ravi.kumar@<slug>.mantiq
+    slug: Mapped[str | None] = mapped_column(String(40), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
@@ -52,6 +54,9 @@ class User(UUIDPk, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     # UI language ("en" or "hi"); NULL until the user picks one after first sign-in.
     preferred_language: Mapped[str | None] = mapped_column(String(5))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Set when an admin creates the account or resets the password; cleared once the user picks their own.
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     organization: Mapped[Organization] = relationship()
@@ -215,6 +220,18 @@ class IncidentPhoto(UUIDPk, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     incident: Mapped[Incident] = relationship(back_populates="photos")
+
+
+class ContactRequest(UUIDPk, Base):
+    """Sent from the public website's contact form."""
+
+    __tablename__ = "contact_requests"
+
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    company: Mapped[str | None] = mapped_column(String(200))
+    contact: Mapped[str] = mapped_column(String(320), nullable=False)  # email or phone
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True, nullable=False)
 
 
 class Message(UUIDPk, Base):

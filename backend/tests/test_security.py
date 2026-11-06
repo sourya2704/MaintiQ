@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from tests.conftest import make_machine, register
+from tests.conftest import add_worker, make_machine, register
 
 
 def test_security_headers_on_every_response(client):
@@ -23,10 +23,7 @@ def test_password_change_ends_other_sessions(client):
 
 def test_mechanics_cannot_change_the_asset_registry(client, auth):
     m = make_machine(client, auth)
-    client.post("/api/users", headers=auth, json={"name": "Ravi", "email": "ravi@acme.example.com",
-                                                  "password": "Password123!", "role": "technician"})
-    tok = client.post("/api/auth/login", json={"email": "ravi@acme.example.com", "password": "Password123!"}).json()["access_token"]
-    tech = {"Authorization": f"Bearer {tok}"}
+    _, _, tech = add_worker(client, auth)
     assert client.get(f"/api/machines/{m['id']}", headers=tech).status_code == 200
     assert client.patch(f"/api/machines/{m['id']}", headers=tech, json={"name": "x"}).status_code == 403
     assert client.post("/api/machines", headers=tech, json={"asset_code": "Z-1", "name": "x", "type": "fan"}).status_code == 403
@@ -40,3 +37,17 @@ def test_api_docs_are_hidden_in_production(settings):
         assert c.get("/docs").status_code == 404
         assert c.get("/openapi.json").status_code == 404
         assert "max-age" in c.get("/api/health").headers["strict-transport-security"]
+
+
+def test_contact_form_stores_requests_and_drops_spam(client):
+    from sqlalchemy import select
+
+    from app.db.session import SessionLocal
+    from app.models import ContactRequest
+
+    ok = client.post("/api/public/contact", json={"name": "Meena Rao", "company": "Rao Castings", "contact": "meena@example.com",
+                                                   "message": "We run 40 machines; can we try Mantiq?"})
+    assert ok.status_code == 202
+    client.post("/api/public/contact", json={"name": "Bot", "contact": "x@example.com", "message": "buy now", "website": "http://spam"})
+    with SessionLocal() as db:
+        assert [c.name for c in db.scalars(select(ContactRequest))] == ["Meena Rao"]

@@ -7,7 +7,7 @@ import { Studio } from "./Studio";
 type GearSpec = { teeth: number; r: number; pos: [number, number, number]; mat: THREE.Material; dir: 1 | -1 };
 
 const brass = new THREE.MeshStandardMaterial({ color: "#b08d57", metalness: 0.95, roughness: 0.3 });
-const bronze = new THREE.MeshStandardMaterial({ color: "#8c5a35", metalness: 0.9, roughness: 0.38 });
+const bronze = new THREE.MeshStandardMaterial({ color: "#5d6b78", metalness: 0.9, roughness: 0.38 });
 
 /** Meshing gear ratios: angular speed scales with 1/teeth so the teeth stay in mesh. */
 const GEARS: GearSpec[] = [

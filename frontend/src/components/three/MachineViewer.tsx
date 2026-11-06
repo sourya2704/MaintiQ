@@ -22,7 +22,7 @@ export default function MachineViewer({ className = "", ...visual }: MachineVisu
   return (
     <div className={className}>
       <Canvas camera={{ position: [3.6, 1.9, 4.2], fov: 38 }} dpr={[1, 2]} shadows gl={{ antialias: true }}>
-        <color attach="background" args={["#ece4d6"]} />
+        <color attach="background" args={["#e6eaee"]} />
         <Studio shadowExtent={4} />
         <ScrollTurn>
           <MachineMesh {...visual} />

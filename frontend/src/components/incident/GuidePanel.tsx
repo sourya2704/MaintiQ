@@ -153,7 +153,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           <p className="text-[15px] text-ink">{g.summary}</p>
           {g.fixed_before && g.fixed_before.length > 0 && (
             <section className="rounded-lg bg-ok/10 p-3">
-              <h3 className="mb-2 text-sm font-semibold text-[#4a6129]">{t("Fixed before at this plant")}</h3>
+              <h3 className="mb-2 text-sm font-semibold text-[#256238]">{t("Fixed before at this plant")}</h3>
               <ul className="space-y-2">
                 {g.fixed_before.map((f) => (
                   <li key={f.ref} className="text-sm text-ink">
@@ -216,7 +216,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
                 return (
                   <li key={s.order}>
                     <label className={`flex cursor-pointer gap-3 rounded-lg border p-3 transition ${done ? "border-ok/35 bg-ok/5" : "border-line hover:bg-card-2"}`}>
-                      <input type="checkbox" checked={done} onChange={() => toggle(s.order)} className="mt-1 accent-[#5f7a3a]" />
+                      <input type="checkbox" checked={done} onChange={() => toggle(s.order)} className="mt-1 accent-[#2f7d4a]" />
                       <div className="min-w-0 flex-1">
                         <div className={`text-sm font-semibold ${done ? "text-ink-mute line-through" : "text-ink"}`}>
                           {s.order}. {t(s.action)}
