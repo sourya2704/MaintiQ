@@ -163,6 +163,54 @@ body {
   animation: shimmer 1.4s linear infinite;
 }
 
+/* ------------------------------------------------------------ entry motion
+   Short, small and on the compositor only (opacity + transform), so it never stalls
+   layout or fights the 3D canvas for the main thread. */
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* cards and list items: delay set inline, capped so long lists never trail */
+.enter {
+  animation: enter-up 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+/* a page arriving after navigation */
+.page-enter {
+  animation: enter-fade 0.18s ease-out both;
+}
+/* website sections ease in as they scroll into view, driven by scroll position, not script */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: enter-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 40%;
+  }
+}
+@keyframes enter-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 20px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

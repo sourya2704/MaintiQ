@@ -1,3 +1,4 @@
+import { useEffect, useState, type RefObject } from "react";
 import * as THREE from "three";
 
 /** Involute-ish gear outline (trapezoid teeth) with a center bore and spoke cut-outs. */
@@ -93,4 +94,20 @@ if (typeof window !== "undefined") {
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
+}
+
+/**
+ * True while the element is on screen (with a little margin). Canvases use it to stop drawing
+ * when scrolled away, so a 3D view below the fold costs nothing while you read the rest of the page.
+ */
+export function useOnScreen(ref: RefObject<HTMLElement | null>, margin = "120px") {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setOn(e.isIntersecting), { rootMargin: margin });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [ref, margin]);
+  return on;
 }

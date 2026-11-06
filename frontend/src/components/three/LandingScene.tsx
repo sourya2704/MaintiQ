@@ -1,6 +1,6 @@
 import { Instance, Instances, PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import { MachineMesh, type MachineKind } from "./MachineModel";
 import { Bloom, bloomTarget, LightPools, LitWindows, NIGHT_FOG, NightSky } from "./Night";
@@ -484,8 +484,15 @@ export default function LandingScene({
   const maxDpr = Math.min(small ? 1.25 : 1.5, typeof window !== "undefined" ? window.devicePixelRatio : 1);
   // Start at 1x for a fast first frame; PerformanceMonitor raises it when the device keeps up.
   const [dpr, setDpr] = useState(1);
-  // Bloom is dropped for good if the device cannot keep up with it.
+  // The glow is dropped for good if the device cannot keep up with it.
   const [bloomOk, setBloomOk] = useState(true);
+  // The bloom pass stays mounted while it hands drawing back to the screen (see Bloom).
+  const wantPass = night && bloomOk;
+  const [passOn, setPassOn] = useState(wantPass);
+  useEffect(() => {
+    if (wantPass) setPassOn(true);
+  }, [wantPass]);
+  const passLeft = useCallback(() => setPassOn(false), []);
   useEffect(() => () => void (prepared.ready = false), []);
   return (
     <div className={className} aria-hidden>
@@ -513,7 +520,7 @@ export default function LandingScene({
         <Structure night={night} />
         <Floor small={small} />
         <Rig state={state} onIntroDone={onIntroDone} night={night} />
-        {night && bloomOk && <Bloom intensity={small ? 0.9 : 1.15} />}
+        {passOn && <Bloom glow={bloomOk} small={small} leaving={!wantPass} onLeft={passLeft} />}
       </Canvas>
     </div>
   );

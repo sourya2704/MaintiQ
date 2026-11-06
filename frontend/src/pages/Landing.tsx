@@ -33,7 +33,11 @@ const NAV = [
 function useSectionProgress(ids: string[], skip: { current: boolean }) {
   const progress = useRef(0);
   useEffect(() => {
-    const update = () => {
+    // Measured at most once per frame: scroll events can fire several times a frame, and each
+    // measurement forces layout while the 3D canvas is also drawing.
+    let queued = 0;
+    const measure = () => {
+      queued = 0;
       const mid = window.innerHeight * 0.45;
       const tops = ids.map((id) => document.getElementById(id)?.getBoundingClientRect().top ?? 0);
       let p = 0;
@@ -44,10 +48,14 @@ function useSectionProgress(ids: string[], skip: { current: boolean }) {
       progress.current = Math.min(p, ids.length - 1);
       if (window.scrollY > 40) skip.current = true; // scrolling fast-forwards the arrival
     };
-    update();
+    const update = () => {
+      if (!queued) queued = requestAnimationFrame(measure);
+    };
+    measure();
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
+      cancelAnimationFrame(queued);
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
@@ -58,7 +66,7 @@ function useSectionProgress(ids: string[], skip: { current: boolean }) {
 function Section({ id, children, wide }: { id: string; children: ReactNode; wide?: boolean }) {
   return (
     <section id={id} className="flex min-h-[100svh] scroll-mt-16 items-end px-4 pb-10 pt-24 sm:items-center sm:px-8 sm:pb-0">
-      <div className={`w-full rounded-2xl border border-line bg-card/92 p-6 shadow-lg backdrop-blur-sm sm:p-8 ${wide ? "max-w-3xl" : "max-w-lg"}`}>
+      <div className={`reveal w-full rounded-2xl border border-line bg-card/95 p-6 shadow-lg sm:p-8 ${wide ? "max-w-3xl" : "max-w-lg"}`}>
         {children}
       </div>
     </section>
@@ -176,13 +184,13 @@ export default function Landing() {
       {!arrived && (
         <button
           onClick={() => (skip.current = true)}
-          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-espresso/80 px-4 py-2 text-sm font-semibold text-cream backdrop-blur hover:bg-espresso"
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-espresso/90 px-4 py-2 text-sm font-semibold text-cream hover:bg-espresso"
         >
           {t("Skip intro")}
         </button>
       )}
 
-      <header className={`fixed inset-x-0 top-0 z-30 backdrop-blur transition ${scrolled ? "border-b border-line bg-card/90" : "bg-card/60"}`}>
+      <header className={`fixed inset-x-0 top-0 z-30 transition-colors duration-200 ${scrolled ? "border-b border-line bg-card/95" : "bg-card/75"}`}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
           <a href="#top" aria-label="Mantiq">
             <Logo />
@@ -227,8 +235,8 @@ export default function Landing() {
       <main className="relative z-10">
         <section id="top" className="flex min-h-[100svh] items-end px-4 pb-12 pt-24 sm:items-center sm:px-8">
           <div
-            className={`max-w-2xl rounded-2xl border border-line bg-card/92 p-6 shadow-lg backdrop-blur-sm transition duration-700 sm:p-10 ${
-              arrived ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"
+            className={`max-w-2xl rounded-2xl border border-line bg-card/95 p-6 shadow-lg transition-[opacity,transform] duration-500 ease-out will-change-transform sm:p-10 ${
+              arrived ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"
             }`}
           >
             <Kicker>Maintenance records for factories</Kicker>

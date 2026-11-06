@@ -110,7 +110,7 @@ export default function Dashboard() {
               { label: "Resolved in 30 days", value: data.incidents.resolved_last_30_days, sub: t("{n} reported in 30d", { n: data.incidents.reported_last_30_days }), tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
               { label: "Machines", value: data.machines.total, sub: t("{down} down, {degraded} degraded", { down: data.machines.by_status.down ?? 0, degraded: data.machines.by_status.degraded ?? 0 }), tone: "brass" as const, to: "/machines" },
             ].map((k, i) => (
-              <Card key={k.label} delay={i * 0.07} onClick={() => navigate(k.to)} alert={Boolean(k.glow)}>
+              <Card key={k.label} delay={i * 0.04} onClick={() => navigate(k.to)} alert={Boolean(k.glow)}>
                 <div className="p-5">
                   <Stat label={k.label} value={k.value} sub={k.sub} tone={k.tone} />
                 </div>

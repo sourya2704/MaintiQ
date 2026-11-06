@@ -39,7 +39,7 @@ function Integrations() {
           const Icon = PROVIDER_ICON[p.provider] ?? GearIcon;
           const live = p.mode === "live";
           return (
-            <Card key={p.provider} delay={i * 0.06}>
+            <Card key={p.provider} delay={i * 0.04}>
               <div className="space-y-3 p-5">
                 <div className="flex items-center justify-between">
                   <div className="group flex items-center gap-2">

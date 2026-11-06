@@ -3,7 +3,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { FLOOR, MachineMesh, type MachineKind } from "./MachineModel";
-import { MAT, statusColor } from "./shared";
+import { MAT, statusColor, useOnScreen } from "./shared";
 import { Studio } from "./Studio";
 import { useTheme } from "../../lib/theme";
 
@@ -138,6 +138,7 @@ export default function PlantFloor({
   );
   const extent = Math.max(cols, rows) * spacing * 0.5;
   const dark = useTheme().theme === "dark";
+  const onScreen = useOnScreen(anchor);
   const bg = dark ? "#121920" : "#e6eaee";
   useEffect(() => {
     MAT.concrete.color.set(dark ? "#3b434c" : "#c7ccd1");
@@ -145,7 +146,7 @@ export default function PlantFloor({
 
   return (
     <div ref={anchor} className={className}>
-      <Canvas camera={{ position: [0, 10, 12], fov: 42 }} dpr={[1, 1.75]} shadows gl={{ antialias: true }}>
+      <Canvas camera={{ position: [0, 10, 12], fov: 42 }} dpr={[1, 1.5]} shadows frameloop={onScreen ? "always" : "never"} gl={{ antialias: true }}>
         <color attach="background" args={[bg]} />
         <fog attach="fog" args={[bg, 16, 40]} />
         <Studio shadowExtent={extent + 4} />
