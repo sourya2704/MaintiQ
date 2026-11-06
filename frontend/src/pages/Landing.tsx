@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   CameraIcon,
@@ -27,8 +27,8 @@ const NAV = [
   { id: "contact", label: "Contact" },
 ];
 
-/** Section index (fractional between sections) drives the 3D camera. */
-function useSectionProgress(ids: string[]) {
+/** Section index (fractional between sections) drives the 3D camera; scrolling also skips the arrival. */
+function useSectionProgress(ids: string[], intro: { current: number }) {
   const progress = useRef(0);
   useEffect(() => {
     const update = () => {
@@ -40,6 +40,7 @@ function useSectionProgress(ids: string[]) {
         if (tops[i] <= mid) p = i + Math.min(1, Math.max(0, (mid - tops[i]) / Math.max(1, next - tops[i])));
       }
       progress.current = Math.min(p, ids.length - 1);
+      if (window.scrollY > 40) intro.current = 1;
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
@@ -48,7 +49,7 @@ function useSectionProgress(ids: string[]) {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [ids]);
+  }, [ids, intro]);
   return progress;
 }
 
@@ -140,8 +141,11 @@ function ContactForm() {
 }
 
 export default function Landing() {
-  const ids = ["top", "product", "memory", "shopfloor", "trust", "about", "contact"];
-  const progress = useSectionProgress(ids);
+  const ids = useMemo(() => ["top", "product", "memory", "shopfloor", "trust", "about", "contact"], []);
+  const intro = useRef(0);
+  const progress = useSectionProgress(ids, intro);
+  const scene = useMemo(() => ({ progress, intro }), [progress]);
+  const [arrived, setArrived] = useState(false);
   const { lang, setLang } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -154,10 +158,20 @@ export default function Landing() {
   return (
     <div className="relative">
       <Suspense fallback={<div className="fixed inset-0 bg-[#e6eaee]" />}>
-        <LandingScene progress={progress} className="fixed inset-0 -z-0" />
+        <LandingScene state={scene} onIntroDone={() => setArrived(true)} className="fixed inset-0 -z-0" />
       </Suspense>
+      {/* soft dark fade at the bottom of the view keeps text cards and the footer readable */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-48 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
+      {!arrived && (
+        <button
+          onClick={() => (intro.current = 1)}
+          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-espresso/80 px-4 py-2 text-sm font-semibold text-cream backdrop-blur hover:bg-espresso"
+        >
+          {t("Skip intro")}
+        </button>
+      )}
 
-      <header className={`fixed inset-x-0 top-0 z-30 transition ${scrolled ? "border-b border-line bg-card/90 backdrop-blur" : ""}`}>
+      <header className={`fixed inset-x-0 top-0 z-30 backdrop-blur transition ${scrolled ? "border-b border-line bg-card/90" : "bg-card/60"}`}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
           <a href="#top" aria-label="Mantiq">
             <Logo />
@@ -200,7 +214,11 @@ export default function Landing() {
 
       <main className="relative z-10">
         <section id="top" className="flex min-h-[100svh] items-end px-4 pb-12 pt-24 sm:items-center sm:px-8">
-          <div className="max-w-2xl rounded-2xl border border-line bg-card/92 p-6 shadow-lg backdrop-blur-sm sm:p-10">
+          <div
+            className={`max-w-2xl rounded-2xl border border-line bg-card/92 p-6 shadow-lg backdrop-blur-sm transition duration-700 sm:p-10 ${
+              arrived ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"
+            }`}
+          >
             <Kicker>Maintenance records for factories</Kicker>
             <h1 className="mt-2 font-display text-4xl font-bold leading-[1.05] text-ink sm:text-6xl">
               {t("Every fault remembered.")} <span className="text-rust">{t("Every fix reused.")}</span>
@@ -216,7 +234,7 @@ export default function Landing() {
                 {t("See how it works")}
               </a>
             </div>
-            <p className="mt-6 text-xs text-ink-mute">{t("Scroll to walk along the line.")}</p>
+            <p className="mt-6 text-xs text-ink-mute">{t("Scroll to walk through the plant.")}</p>
           </div>
         </section>
 
