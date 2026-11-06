@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import httpx
 
@@ -92,3 +93,24 @@ def test_hindi_and_hinglish_symptoms():
     assert detect_hazard("पैनल से धुआं निकल रहा है")
     assert not detect_hazard("धुआं नहीं है")
     assert tag_symptoms("motor bahut garam hai aur awaaz aa rahi hai") == ["overheating", "abnormal_noise"]
+
+
+def test_jobs_interrupted_by_restart_are_failed_and_retryable(client, auth):
+    from app.db.session import SessionLocal
+    from app.models import AIProcessingJob, Incident
+    from app.services.pipeline import recover_interrupted_jobs
+    from tests.conftest import make_machine
+
+    m = make_machine(client, auth)
+    inc = client.post("/api/incidents", headers=auth,
+                      data={"machine_id": m["id"], "transcript": "Pump is leaking at the seal"}).json()
+    with SessionLocal() as db:
+        row = db.get(Incident, uuid.UUID(inc["id"]))
+        row.processing_status = "analyzing"
+        db.add(AIProcessingJob(incident_id=row.id, provider="evon", task="extraction", model="evon-mock", mode="mock"))
+        db.commit()
+
+    assert recover_interrupted_jobs() == 1
+    after = client.get(f"/api/incidents/{inc['id']}", headers=auth).json()
+    assert after["processing_status"] == "analysis_failed"
+    assert client.post(f"/api/incidents/{inc['id']}/analyze", headers=auth).status_code == 202

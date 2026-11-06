@@ -17,6 +17,7 @@ from app.api.routes import auth, dashboard, incidents, machines, memory, setting
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.db.session import engine
+from app.services.pipeline import recover_interrupted_jobs
 from app.services.retention import retention_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -25,6 +26,11 @@ log = logging.getLogger("mantiq.http")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    try:
+        if recovered := await asyncio.to_thread(recover_interrupted_jobs):
+            log.warning("marked %d interrupted AI job(s) as failed", recovered)
+    except Exception:
+        log.exception("could not recover interrupted AI jobs")
     task = asyncio.create_task(retention_loop()) if get_settings().retention_interval_minutes > 0 else None
     yield
     if task:
