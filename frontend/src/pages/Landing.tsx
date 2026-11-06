@@ -28,7 +28,7 @@ const NAV = [
 ];
 
 /** Section index (fractional between sections) drives the 3D camera; scrolling also skips the arrival. */
-function useSectionProgress(ids: string[], intro: { current: number }) {
+function useSectionProgress(ids: string[], skip: { current: boolean }) {
   const progress = useRef(0);
   useEffect(() => {
     const update = () => {
@@ -40,7 +40,7 @@ function useSectionProgress(ids: string[], intro: { current: number }) {
         if (tops[i] <= mid) p = i + Math.min(1, Math.max(0, (mid - tops[i]) / Math.max(1, next - tops[i])));
       }
       progress.current = Math.min(p, ids.length - 1);
-      if (window.scrollY > 40) intro.current = 1;
+      if (window.scrollY > 40) skip.current = true; // scrolling fast-forwards the arrival
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
@@ -49,7 +49,7 @@ function useSectionProgress(ids: string[], intro: { current: number }) {
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [ids, intro]);
+  }, [ids, skip]);
   return progress;
 }
 
@@ -143,8 +143,9 @@ function ContactForm() {
 export default function Landing() {
   const ids = useMemo(() => ["top", "product", "memory", "shopfloor", "trust", "about", "contact"], []);
   const intro = useRef(0);
-  const progress = useSectionProgress(ids, intro);
-  const scene = useMemo(() => ({ progress, intro }), [progress]);
+  const skip = useRef(false);
+  const progress = useSectionProgress(ids, skip);
+  const scene = useMemo(() => ({ progress, intro, skip }), [progress]);
   const [arrived, setArrived] = useState(false);
   const { lang, setLang } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
@@ -157,14 +158,14 @@ export default function Landing() {
 
   return (
     <div className="relative">
-      <Suspense fallback={<div className="fixed inset-0 bg-[#e6eaee]" />}>
+      <Suspense fallback={<div className="fixed inset-0 bg-gradient-to-b from-[#b9cddd] via-[#cfdbe6] to-[#e9eef2]" />}>
         <LandingScene state={scene} onIntroDone={() => setArrived(true)} className="fixed inset-0 -z-0" />
       </Suspense>
       {/* soft dark fade at the bottom of the view keeps text cards and the footer readable */}
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-[1] h-48 bg-gradient-to-t from-black/45 via-black/15 to-transparent" />
       {!arrived && (
         <button
-          onClick={() => (intro.current = 1)}
+          onClick={() => (skip.current = true)}
           className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-full bg-espresso/80 px-4 py-2 text-sm font-semibold text-cream backdrop-blur hover:bg-espresso"
         >
           {t("Skip intro")}

@@ -47,13 +47,13 @@ function speckle(g: CanvasRenderingContext2D, size: number, rnd: () => number, n
 export function paintTexture(color: string, wear = 0.5, seed = 1) {
   const key = `paint:${color}:${wear}:${seed}`;
   if (cache.has(key)) return cache.get(key)!;
-  const size = 512;
+  const size = 256;
   const [c, g] = canvas(size);
   const rnd = seeded(seed * 7919);
   g.fillStyle = color;
   g.fillRect(0, 0, size, size);
-  speckle(g, size, rnd, 9000, 0.07);
-  speckle(g, size, rnd, 4000, 0.05, true);
+  speckle(g, size, rnd, 2300, 0.07);
+  speckle(g, size, rnd, 1000, 0.05, true);
   // grime gathers low down and in streaks
   const grad = g.createLinearGradient(0, 0, 0, size);
   grad.addColorStop(0, "rgba(40,30,20,0)");
@@ -61,9 +61,9 @@ export function paintTexture(color: string, wear = 0.5, seed = 1) {
   grad.addColorStop(1, `rgba(30,22,15,${0.35 * wear})`);
   g.fillStyle = grad;
   g.fillRect(0, 0, size, size);
-  for (let i = 0; i < 26 * wear; i++) {
+  for (let i = 0; i < 18 * wear; i++) {
     const x = rnd() * size;
-    const h = 40 + rnd() * 160;
+    const h = 20 + rnd() * 80;
     const y = rnd() * size;
     const sg = g.createLinearGradient(0, y, 0, y + h);
     sg.addColorStop(0, "rgba(50,38,25,0.18)");
@@ -72,10 +72,10 @@ export function paintTexture(color: string, wear = 0.5, seed = 1) {
     g.fillRect(x, y, 2 + rnd() * 3, h);
   }
   // chips: primer ring around bare steel
-  for (let i = 0; i < 70 * wear; i++) {
+  for (let i = 0; i < 40 * wear; i++) {
     const x = rnd() * size;
     const y = rnd() * size;
-    const r = 1.5 + rnd() * 5;
+    const r = 1 + rnd() * 3;
     g.fillStyle = "rgba(150,70,45,0.65)";
     g.beginPath();
     g.ellipse(x, y, r * 1.6, r, rnd() * Math.PI, 0, Math.PI * 2);
@@ -92,18 +92,18 @@ export function paintTexture(color: string, wear = 0.5, seed = 1) {
 export function paintRoughness(wear = 0.5, seed = 1) {
   const key = `paintR:${wear}:${seed}`;
   if (cache.has(key)) return cache.get(key)!;
-  const size = 256;
+  const size = 128;
   const [c, g] = canvas(size);
   const rnd = seeded(seed * 104729);
   g.fillStyle = "rgb(120,120,120)";
   g.fillRect(0, 0, size, size);
-  for (let i = 0; i < 160 * wear; i++) {
+  for (let i = 0; i < 60 * wear; i++) {
     g.fillStyle = `rgba(230,230,230,${0.15 + rnd() * 0.3})`;
     g.beginPath();
-    g.arc(rnd() * size, rnd() * size, 3 + rnd() * 14, 0, Math.PI * 2);
+    g.arc(rnd() * size, rnd() * size, 2 + rnd() * 7, 0, Math.PI * 2);
     g.fill();
   }
-  speckle(g, size, rnd, 3000, 0.25, true);
+  speckle(g, size, rnd, 800, 0.25, true);
   return finish(key, c, [1, 1], false);
 }
 
@@ -111,12 +111,12 @@ export function paintRoughness(wear = 0.5, seed = 1) {
 export function brushedTexture(base = "#b9b3a8") {
   const key = `brushed:${base}`;
   if (cache.has(key)) return cache.get(key)!;
-  const size = 512;
+  const size = 256;
   const [c, g] = canvas(size);
   const rnd = seeded(31);
   g.fillStyle = base;
   g.fillRect(0, 0, size, size);
-  for (let i = 0; i < 2600; i++) {
+  for (let i = 0; i < 900; i++) {
     const y = rnd() * size;
     const l = rnd() > 0.5 ? 255 : 0;
     g.strokeStyle = `rgba(${l},${l},${l},${0.04 + rnd() * 0.08})`;
@@ -133,14 +133,14 @@ export function brushedTexture(base = "#b9b3a8") {
 export function castTexture(color: string, seed = 3) {
   const key = `cast:${color}:${seed}`;
   if (cache.has(key)) return cache.get(key)!;
-  const size = 512;
+  const size = 256;
   const [c, g] = canvas(size);
   const rnd = seeded(seed * 613);
   g.fillStyle = color;
   g.fillRect(0, 0, size, size);
-  speckle(g, size, rnd, 26000, 0.12);
-  speckle(g, size, rnd, 9000, 0.08, true);
-  for (let i = 0; i < 500; i++) {
+  speckle(g, size, rnd, 6500, 0.12);
+  speckle(g, size, rnd, 2300, 0.08, true);
+  for (let i = 0; i < 160; i++) {
     g.fillStyle = `rgba(20,15,10,${0.2 + rnd() * 0.3})`;
     g.beginPath();
     g.arc(rnd() * size, rnd() * size, 0.6 + rnd() * 1.6, 0, Math.PI * 2);
@@ -153,13 +153,13 @@ export function castTexture(color: string, seed = 3) {
 export function grainBump(seed = 5) {
   const key = `grain:${seed}`;
   if (cache.has(key)) return cache.get(key)!;
-  const size = 256;
+  const size = 128;
   const [c, g] = canvas(size);
   const rnd = seeded(seed * 211);
   g.fillStyle = "rgb(128,128,128)";
   g.fillRect(0, 0, size, size);
-  speckle(g, size, rnd, 9000, 0.35);
-  speckle(g, size, rnd, 9000, 0.35, true);
+  speckle(g, size, rnd, 2300, 0.35);
+  speckle(g, size, rnd, 2300, 0.35, true);
   return finish(key, c, [3, 3], false);
 }
 
@@ -191,12 +191,12 @@ export function rubberTexture(chevron = true) {
 export function galvanizedTexture() {
   const key = "galv";
   if (cache.has(key)) return cache.get(key)!;
-  const size = 512;
+  const size = 256;
   const [c, g] = canvas(size);
   const rnd = seeded(91);
   g.fillStyle = "#a9aca9";
   g.fillRect(0, 0, size, size);
-  for (let i = 0; i < 260; i++) {
+  for (let i = 0; i < 110; i++) {
     const l = 140 + rnd() * 60;
     g.fillStyle = `rgba(${l},${l + 3},${l},0.35)`;
     g.beginPath();

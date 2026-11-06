@@ -51,3 +51,19 @@ def test_contact_form_stores_requests_and_drops_spam(client):
     client.post("/api/public/contact", json={"name": "Bot", "contact": "x@example.com", "message": "buy now", "website": "http://spam"})
     with SessionLocal() as db:
         assert [c.name for c in db.scalars(select(ContactRequest))] == ["Meena Rao"]
+
+
+def test_built_assets_are_compressed_and_cached(tmp_path, settings):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<!doctype html><div id=root></div>")
+    (tmp_path / "assets" / "app-abc123.js").write_text("console.log('mantiq');\n" * 400)
+    settings.static_dir = tmp_path
+    with TestClient(create_app()) as c:
+        r = c.get("/assets/app-abc123.js", headers={"Accept-Encoding": "gzip"})
+        assert r.status_code == 200 and r.headers["content-encoding"] == "gzip"
+        assert "immutable" in r.headers["cache-control"]
+        assert c.get("/").headers["cache-control"] == "no-cache"

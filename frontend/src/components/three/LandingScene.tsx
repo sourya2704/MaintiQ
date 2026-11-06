@@ -1,6 +1,6 @@
 import { Instance, Instances, PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import * as THREE from "three";
 import { MachineMesh, type MachineKind } from "./MachineModel";
 import { FLOOR, M } from "./parts";
@@ -74,8 +74,14 @@ function samplePath(keys: Key[], t: number, pos: THREE.Vector3, look: THREE.Vect
 
 export interface SceneState {
   progress: { current: number }; // page section, fractional while scrolling
-  intro: { current: number }; // 0..1 arrival sequence; 1 when done or skipped
+  intro: { current: number }; // 0..1 arrival sequence; 1 when done
+  skip: { current: boolean }; // fast-forward the arrival (Skip button or scrolling)
 }
+
+/** Set once every machine is built and its shaders and textures are on the GPU. */
+const prepared = { ready: false };
+const SKIP_SECONDS = 1.2;
+const HOLD_AT = 0.45; // the arrival waits outside the gate if the hall is not prepared yet
 
 function Rig({ state, onIntroDone }: { state: SceneState; onIntroDone: () => void }) {
   const { camera } = useThree();
@@ -87,8 +93,12 @@ function Rig({ state, onIntroDone }: { state: SceneState; onIntroDone: () => voi
   useFrame((_, dt) => {
     const step = Math.min(dt, 0.05);
     if (state.intro.current < 1) {
-      // real elapsed time, so slow devices skip frames instead of slowing the arrival down
-      state.intro.current = reduced ? 1 : Math.min(1, state.intro.current + Math.min(dt, 0.25) / INTRO_SECONDS);
+      // Real elapsed time, so slow devices drop frames rather than slow the arrival down.
+      // Skipping fast-forwards instead of jumping, so there is no cut to an unprepared hall.
+      const rate = state.skip.current ? 1 / SKIP_SECONDS : 1 / INTRO_SECONDS;
+      let next = reduced && prepared.ready ? 1 : state.intro.current + Math.min(dt, 0.1) * rate;
+      if (!prepared.ready) next = Math.min(next, HOLD_AT);
+      state.intro.current = Math.min(1, next);
       samplePath(INTRO, state.intro.current, pos, tgt);
       camera.position.copy(pos);
       look.current.copy(tgt);
@@ -342,23 +352,82 @@ function Structure() {
 /** Hides a machine when the camera is outside or far along the aisle. */
 function Near({ x, radius, children }: { x: number; radius: number; children: ReactNode }) {
   const ref = useRef<THREE.Group>(null);
+  // Drawn for its first two frames regardless of distance, so its geometry reaches the GPU
+  // while the camera is still outside, not in the frame where the hall comes into view.
+  const warmFrames = useRef(2);
   useFrame(({ camera }) => {
-    if (ref.current) ref.current.visible = camera.position.x > GATE_X - 6 && Math.abs(camera.position.x - x) < radius;
+    if (!ref.current) return;
+    if (warmFrames.current > 0) {
+      warmFrames.current -= 1;
+      ref.current.visible = true;
+      return;
+    }
+    ref.current.visible = camera.position.x > GATE_X - 6 && Math.abs(camera.position.x - x) < radius;
   });
   return <group ref={ref}>{children}</group>;
 }
 
+/**
+ * Adds one machine per frame while the camera is still in the sky. Each one has its shaders
+ * compiled and textures uploaded the moment it is added (see Prepared), so the work is spread
+ * over many small frames instead of one long freeze when the hall first comes into view.
+ */
+function useStagedMount(total: number) {
+  const [count, setCount] = useState(0);
+  useFrame(() => {
+    if (count < total) setCount((c) => Math.min(total, c + 1));
+  });
+  useEffect(() => {
+    if (count >= total) prepared.ready = true;
+  }, [count, total]);
+  return count;
+}
+
+/** Compiles one machine's materials and uploads its textures as soon as it mounts. */
+function Prepared({ children }: { children: ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  const { gl, scene, camera } = useThree();
+  useLayoutEffect(() => {
+    const group = ref.current;
+    if (!group) return;
+    const parent = group.parent;
+    const wasVisible = parent?.visible ?? true;
+    if (parent) parent.visible = true; // compile() skips hidden objects
+    group.updateMatrixWorld(true);
+    try {
+      gl.compile(group, camera, scene); // the scene supplies the lights the shaders are built for
+      group.traverse((o) => {
+        const mats = (o as THREE.Mesh).material;
+        for (const mat of Array.isArray(mats) ? mats : mats ? [mats] : []) {
+          for (const key of ["map", "roughnessMap", "bumpMap"] as const) {
+            const tex = (mat as THREE.MeshStandardMaterial)[key];
+            if (tex) gl.initTexture(tex);
+          }
+        }
+      });
+    } finally {
+      if (parent) parent.visible = wasVisible;
+    }
+  }, [gl, scene, camera]);
+  return <group ref={ref}>{children}</group>;
+}
+
+const BY_DISTANCE = [...MACHINES].sort((a, b) => a.x - b.x); // build the entrance end first
+
 function Floor({ small }: { small: boolean }) {
   const blob = useMemo(() => new THREE.MeshBasicMaterial({ map: blobShadowTexture(), transparent: true, depthWrite: false }), []);
+  const count = useStagedMount(BY_DISTANCE.length);
   return (
     <>
-      {MACHINES.map((mc) => (
-        <Near key={mc.kind} x={mc.x} radius={small ? 16 : 26}>
+      {BY_DISTANCE.slice(0, count).map((mc) => (
+        <Near key={mc.kind} x={mc.x} radius={small ? 12 : 18}>
           <group position={[mc.x, 0, mc.z]} rotation={[0, mc.rotY, 0]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, Y0 + 0.006, 0]} material={blob}>
               <planeGeometry args={[3.6, 2.6]} />
             </mesh>
-            <MachineMesh kind={mc.kind} status="operational" symptoms={SYMPTOMS[mc.kind] ?? []} />
+            <Prepared>
+              <MachineMesh kind={mc.kind} status="operational" symptoms={SYMPTOMS[mc.kind] ?? []} />
+            </Prepared>
           </group>
         </Near>
       ))}
@@ -368,8 +437,10 @@ function Floor({ small }: { small: boolean }) {
 
 export default function LandingScene({ state, onIntroDone, className = "" }: { state: SceneState; onIntroDone: () => void; className?: string }) {
   const small = typeof window !== "undefined" && window.innerWidth < 768;
-  const maxDpr = small ? 1.25 : 1.5;
-  const [dpr, setDpr] = useState(maxDpr);
+  const maxDpr = Math.min(small ? 1.25 : 1.5, typeof window !== "undefined" ? window.devicePixelRatio : 1);
+  // Start at 1x for a fast first frame; PerformanceMonitor raises it when the device keeps up.
+  const [dpr, setDpr] = useState(1);
+  useEffect(() => () => void (prepared.ready = false), []);
   return (
     <div className={className} aria-hidden>
       <Canvas camera={{ position: INTRO[0].pos, fov: small ? 62 : 48, near: 0.1, far: 260 }} dpr={dpr} gl={{ antialias: !small, powerPreference: "high-performance" }}>

@@ -4,10 +4,17 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ToastProvider } from "./components/ui/kit";
-import { ApiError } from "./lib/api";
+import { ApiError, tokenStore } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
 import { LanguageProvider } from "./lib/i18n";
 import "./index.css";
+
+// Visitors on the public site: start downloading the website and its 3D scene right away,
+// in parallel, instead of one after another as each lazy import is reached.
+if (window.location.pathname === "/" && !tokenStore.get()) {
+  void import("./pages/Landing");
+  void import("./components/three/LandingScene");
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
