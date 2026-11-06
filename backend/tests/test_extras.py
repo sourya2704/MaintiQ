@@ -127,3 +127,12 @@ def test_evon_credentials_status_is_reported_honestly(client, auth, settings):
     assert evon()["live_ready"] is True
     settings.evon_base_url, settings.evon_api_key = "http://localhost:30000/v1", ""
     assert evon()["credentials_configured"] is True
+
+
+def test_safety_filter_keeps_negated_advice():
+    from app.services.extraction import is_unsafe_advice
+
+    assert is_unsafe_advice("Bypass the interlock to test the motor")
+    assert is_unsafe_advice("Do not wait, bypass the interlock")
+    assert not is_unsafe_advice("Do not remove the guard while the shaft turns")
+    assert not is_unsafe_advice("Never bypass the safety interlock")

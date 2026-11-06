@@ -105,6 +105,14 @@ UNSAFE_ADVICE = re.compile(
     r"\b(bypass|defeat|jumper|override|disable|remove|ignore)\b[^.]{0,40}\b(interlock|guard|safety|e-?stop|emergency stop|lockout|tagout|procedure|sensor)",
     re.IGNORECASE,
 )
+# "Do not remove the guard" is the advice we want; only un-negated instructions are unsafe.
+SAFE_NEGATION = re.compile(r"\b(?:do not|don't|never|avoid|must not|should not|cannot|can't)\s+(?:\w+\s+)?$", re.IGNORECASE)
+
+
+def is_unsafe_advice(text: str) -> bool:
+    return any(not SAFE_NEGATION.search(text[: m.start()]) for m in UNSAFE_ADVICE.finditer(text or ""))
+
+
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 
@@ -177,7 +185,7 @@ def postprocess(draft: IncidentDraft, transcript: str) -> ExtractionResult:
 
     safe_checks = []
     for check in draft.suggested_checks:
-        if UNSAFE_ADVICE.search(check):
+        if is_unsafe_advice(check):
             warnings.append("Removed a suggested check that conflicted with safety rules")
         else:
             safe_checks.append(check)
