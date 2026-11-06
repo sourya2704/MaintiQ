@@ -12,6 +12,7 @@ import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { humanize } from "../lib/format";
+import { t } from "../lib/i18n";
 import type { DashboardSummary, IncidentListItem, Machine, Page } from "../lib/types";
 
 const GearTrain = lazy(() => import("../components/three/GearTrain"));
@@ -72,16 +73,19 @@ export default function Dashboard() {
           <GearTrain className="absolute inset-y-0 right-0 hidden w-[45%] md:block" />
         </Suspense>
         <div className="relative max-w-xl p-6 sm:p-8">
-          <div className="font-mono text-[11px] uppercase tracking-wider text-brass">Control room</div>
+          <div className="font-mono text-[11px] uppercase tracking-wider text-brass">{t("Control room")}</div>
           <h1 className="mt-2 font-display text-3xl font-bold uppercase leading-tight tracking-wide sm:text-4xl">
-            Hello, {user?.name.split(" ")[0]}
+            {t("Hello, {name}", { name: user?.name.split(" ")[0] ?? "" })}
           </h1>
           <p className="mt-3 text-sm text-ink-dim">
             {data
               ? data.incidents.open > 0
-                ? `${data.incidents.open} incident${data.incidents.open > 1 ? "s" : ""} still open across ${data.machines.total} machines.`
-                : "No open incidents. All machines clear."
-              : "Loading plant status…"}
+                ? t(data.incidents.open > 1 ? "{n} incidents still open across {m} machines." : "{n} incident still open across {m} machines.", {
+                    n: data.incidents.open,
+                    m: data.machines.total,
+                  })
+                : t("No open incidents. All machines clear.")
+              : t("Loading plant status…")}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button3D variant="primary" size="lg" icon={<MicIcon size={18} />} onClick={() => navigate("/report")}>
@@ -101,10 +105,10 @@ export default function Dashboard() {
         {isLoading || !data
           ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-32" />)
           : [
-              { label: "Open incidents", value: data.incidents.open, sub: `${data.incidents.urgent_open} urgent`, tone: "rust" as const, to: "/incidents?resolution_status=open", glow: data.incidents.urgent_open ? ("alert" as const) : undefined },
-              { label: "Awaiting review", value: data.incidents.awaiting_review, sub: "AI drafts to confirm", tone: "warn" as const, to: "/incidents?processing_status=awaiting_review" },
-              { label: "Resolved · 30d", value: data.incidents.resolved_last_30_days, sub: `${data.incidents.reported_last_30_days} reported in 30d`, tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
-              { label: "Machines", value: data.machines.total, sub: `${data.machines.by_status.down ?? 0} down · ${data.machines.by_status.degraded ?? 0} degraded`, tone: "brass" as const, to: "/machines" },
+              { label: "Open incidents", value: data.incidents.open, sub: t("{n} urgent", { n: data.incidents.urgent_open }), tone: "rust" as const, to: "/incidents?resolution_status=open", glow: data.incidents.urgent_open ? ("alert" as const) : undefined },
+              { label: "Awaiting review", value: data.incidents.awaiting_review, sub: t("AI drafts to confirm"), tone: "warn" as const, to: "/incidents?processing_status=awaiting_review" },
+              { label: "Resolved · 30d", value: data.incidents.resolved_last_30_days, sub: t("{n} reported in 30d", { n: data.incidents.reported_last_30_days }), tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
+              { label: "Machines", value: data.machines.total, sub: t("{down} down · {degraded} degraded", { down: data.machines.by_status.down ?? 0, degraded: data.machines.by_status.degraded ?? 0 }), tone: "brass" as const, to: "/machines" },
             ].map((k, i) => (
               <Card key={k.label} delay={i * 0.07} onClick={() => navigate(k.to)} alert={Boolean(k.glow)}>
                 <div className="p-5">
@@ -115,7 +119,7 @@ export default function Dashboard() {
       </div>
       {data && data.incidents.processing_failed > 0 && (
         <Link to="/incidents?processing_status=transcription_failed" className="block rounded-xl border border-alert/40 bg-alert/10 px-4 py-3 text-sm text-alert">
-          {data.incidents.processing_failed} incident(s) have a failed AI step. Open them to retry or enter the transcript manually.
+          {t("{n} incident(s) have a failed AI step. Open them to retry or enter the transcript manually.", { n: data.incidents.processing_failed })}
         </Link>
       )}
 
@@ -126,7 +130,7 @@ export default function Dashboard() {
             kicker="Live plant floor · scroll to fly in"
             title="Plant Floor"
             icon={<CubeIcon size={26} />}
-            actions={<span className="text-xs text-ink-mute">Click a machine to open it</span>}
+            actions={<span className="text-xs text-ink-mute">{t("Click a machine to open it")}</span>}
           />
           <div className="surface relative min-h-0 flex-1 overflow-hidden rounded-xl">
             {floor.length ? (
@@ -144,10 +148,10 @@ export default function Dashboard() {
               </div>
             )}
             <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-md bg-card/90 px-3 py-1.5 text-xs text-ink-dim">
-              <span className="text-ok">● operational</span>
-              <span className="text-warn">● degraded</span>
-              <span className="text-alert">● down</span>
-              <span>Floor tape shows status · open faults animate the machine</span>
+              <span className="text-ok">● {t("operational")}</span>
+              <span className="text-warn">● {t("degraded")}</span>
+              <span className="text-alert">● {t("down")}</span>
+              <span>{t("Floor tape shows status · open faults animate the machine")}</span>
             </div>
           </div>
         </div>
@@ -166,7 +170,7 @@ export default function Dashboard() {
                     <div className="mb-1 flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 capitalize text-ink-dim group-hover:text-ink">
                         <SymptomIcon tag={s.tag} size={16} className="text-rust" />
-                        {humanize(s.tag)}
+                        {t(humanize(s.tag))}
                       </span>
                       <span className="font-mono text-xs text-ink-mute">{s.count}</span>
                     </div>
@@ -186,7 +190,7 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="Unresolved" icon={<IncidentIcon size={18} />} className="lg:col-span-3" actions={<Link to="/incidents" className="text-xs text-brass hover:underline">All incidents</Link>}>
+        <Panel title="Unresolved" icon={<IncidentIcon size={18} />} className="lg:col-span-3" actions={<Link to="/incidents" className="text-xs text-brass hover:underline">{t("All incidents")}</Link>}>
           {!data ? (
             <Skeleton className="h-40" />
           ) : data.unresolved_incidents.length === 0 ? (

@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { tNode } from "../../lib/i18n";
 import { GearIcon } from "../icons/MachineIcons";
 
 type Variant = "primary" | "dark" | "neutral" | "danger" | "ghost";
@@ -54,7 +55,7 @@ export const Button3D = forwardRef<HTMLButtonElement, Button3DProps>(function Bu
         }`}
       >
         {loading ? <GearIcon size={16} className="animate-spin" /> : icon}
-        {children && <span>{children}</span>}
+        {children && <span>{tNode(children)}</span>}
       </span>
     </button>
   );

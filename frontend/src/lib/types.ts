@@ -26,6 +26,7 @@ export interface User {
   email: string;
   role: Role;
   is_active: boolean;
+  preferred_language?: "en" | "hi" | null;
   created_at: string;
   organization?: { id: string; name: string };
 }

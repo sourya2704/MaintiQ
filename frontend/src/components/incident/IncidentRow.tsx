@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { processingTone, resolutionTone, timeAgo, urgencyTone } from "../../lib/format";
+import { t } from "../../lib/i18n";
 import type { IncidentListItem } from "../../lib/types";
 import { ChevronRight, MachineTypeIcon } from "../icons/MachineIcons";
 import { Pill, StatusPill, SymptomChip } from "../ui/kit";
@@ -17,7 +18,7 @@ export function IncidentRow({ inc, compact }: { inc: IncidentListItem; index?: n
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-xs font-bold text-rust">{inc.machine.asset_code}</span>
-            <span className="truncate text-sm text-ink">{inc.summary ?? "Awaiting transcript…"}</span>
+            <span className="truncate text-sm text-ink">{inc.summary ?? t("Awaiting transcript…")}</span>
           </div>
           {!compact && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

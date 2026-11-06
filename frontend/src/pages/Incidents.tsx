@@ -8,6 +8,7 @@ import { Button3D } from "../components/ui/Button3D";
 import { EmptyState, ErrorBox, Input, Panel, Select, Skeleton } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { humanize } from "../lib/format";
+import { t } from "../lib/i18n";
 import type { IncidentListItem, Machine, Page } from "../lib/types";
 
 const FILTERS = {
@@ -60,26 +61,26 @@ export default function Incidents() {
           }}
         >
           <SearchBoltIcon size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute" />
-          <Input aria-label="Search incidents" placeholder="Search transcripts, symptoms, actions, outcomes… (press Enter)" className="pl-9" value={qInput} onChange={(e) => setQInput(e.target.value)} />
+          <Input aria-label={t("Search incidents")} placeholder={t("Search transcripts, symptoms, actions, outcomes… (press Enter)")} className="pl-9" value={qInput} onChange={(e) => setQInput(e.target.value)} />
         </form>
         <div className="flex flex-wrap gap-2 [&>*]:min-w-[150px] [&>*]:flex-1">
-          <Select aria-label="Machine" value={get("machine_id")} onChange={(e) => setParam("machine_id", e.target.value)}>
-            <option value="">All machines</option>
+          <Select aria-label={t("Machine")} value={get("machine_id")} onChange={(e) => setParam("machine_id", e.target.value)}>
+            <option value="">{t("All machines")}</option>
             {machines.data?.items.map((m) => <option key={m.id} value={m.id}>{m.asset_code}</option>)}
           </Select>
-          <Select aria-label="Symptom" value={get("symptom")} onChange={(e) => setParam("symptom", e.target.value)}>
-            <option value="">Any symptom</option>
-            {tags.data?.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}
+          <Select aria-label={t("Symptom")} value={get("symptom")} onChange={(e) => setParam("symptom", e.target.value)}>
+            <option value="">{t("Any symptom")}</option>
+            {tags.data?.map((tag) => <option key={tag} value={tag}>{t(humanize(tag))}</option>)}
           </Select>
           {(Object.keys(FILTERS) as (keyof typeof FILTERS)[]).map((k) => (
-            <Select key={k} aria-label={humanize(k)} value={get(k)} onChange={(e) => setParam(k, e.target.value)}>
-              <option value="">{humanize(k).replace(" status", "")}: any</option>
-              {FILTERS[k].map((v) => <option key={v} value={v}>{humanize(v)}</option>)}
+            <Select key={k} aria-label={t(humanize(k))} value={get(k)} onChange={(e) => setParam(k, e.target.value)}>
+              <option value="">{t("{field}: any", { field: t(humanize(k).replace(" status", "")) })}</option>
+              {FILTERS[k].map((v) => <option key={v} value={v}>{t(humanize(v))}</option>)}
             </Select>
           ))}
           <label className="flex h-10 items-center gap-2 rounded-lg border border-line bg-sunk/80 px-3 text-sm text-ink-dim">
             <input type="checkbox" checked={get("mine") === "true"} onChange={(e) => setParam("mine", e.target.checked ? "true" : "")} className="accent-[#a0522d]" />
-            Mine only
+            {t("Mine only")}
           </label>
         </div>
         {filtered && (
@@ -90,13 +91,13 @@ export default function Incidents() {
               setParams(new URLSearchParams(), { replace: true });
             }}
           >
-            Clear filters
+            {t("Clear filters")}
           </button>
         )}
       </div>
 
       {list.error && <ErrorBox error={list.error} onRetry={() => list.refetch()} />}
-      <Panel title={list.data ? `${list.data.total} incident${list.data.total === 1 ? "" : "s"}` : "Incidents"} icon={<IncidentIcon size={18} />}>
+      <Panel title={list.data ? t(list.data.total === 1 ? "{n} incident" : "{n} incidents", { n: list.data.total }) : "Incidents"} icon={<IncidentIcon size={18} />}>
         {list.isLoading ? (
           <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
         ) : list.data?.items.length === 0 ? (

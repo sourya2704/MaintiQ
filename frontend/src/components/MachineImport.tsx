@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
+import { t } from "../lib/i18n";
 import type { ImportReport } from "../lib/types";
 import { CheckIcon, DownloadIcon, UploadIcon } from "./icons/MachineIcons";
 import { Button3D } from "./ui/Button3D";
@@ -52,7 +53,7 @@ export function MachineImport({ onDone }: { onDone: () => void }) {
       const r = await runImport(file, conflict, false);
       qc.invalidateQueries({ queryKey: ["machines"] });
       qc.invalidateQueries({ queryKey: ["machine-types"] });
-      toast("ok", `Imported: ${r.created} created, ${r.updated} updated, ${r.skipped} skipped`);
+      toast("ok", t("Imported: {created} created, {updated} updated, {skipped} skipped", { created: r.created, updated: r.updated, skipped: r.skipped }));
       onDone();
     } catch (e) {
       toast("alert", errorText(e));
@@ -74,18 +75,16 @@ export function MachineImport({ onDone }: { onDone: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-ink-dim">
-        Upload your asset list as CSV (Excel: <em>Save as → CSV</em>). Needed columns: asset code, name and type. Optional:
-        manufacturer, model, location, status. Common header names like <span className="font-mono">Asset No</span>,{" "}
-        <span className="font-mono">Equipment</span> or <span className="font-mono">Category</span> are recognised.
+        {t("Upload your asset list as CSV (Excel: Save as → CSV). Needed columns: asset code, name and type. Optional: manufacturer, model, location, status. Common header names like Asset No, Equipment or Category are recognised.")}
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <Button3D variant="neutral" icon={<UploadIcon size={16} />} onClick={() => input.current?.click()}>
           {file ? "Choose another file" : "Choose CSV file"}
         </Button3D>
         <input ref={input} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        <Select aria-label="If an asset code already exists" value={conflict} onChange={(e) => setConflict(e.target.value as Conflict)} className="!w-auto">
-          <option value="skip">Existing asset codes: skip</option>
-          <option value="update">Existing asset codes: update</option>
+        <Select aria-label={t("If an asset code already exists")} value={conflict} onChange={(e) => setConflict(e.target.value as Conflict)} className="!w-auto">
+          <option value="skip">{t("Existing asset codes: skip")}</option>
+          <option value="update">{t("Existing asset codes: update")}</option>
         </Select>
         <Button3D variant="ghost" icon={<DownloadIcon size={14} />} onClick={template}>
           Template
@@ -98,32 +97,32 @@ export function MachineImport({ onDone }: { onDone: () => void }) {
         <div className="space-y-3 rounded-lg border border-line bg-sunk/50 p-4">
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
             <span>
-              <b className="text-ink">{preview.total_rows}</b> <span className="text-ink-mute">rows</span>
+              <b className="text-ink">{preview.total_rows}</b> <span className="text-ink-mute">{t("rows")}</span>
             </span>
             <span className="text-ok">
-              <b>{preview.created}</b> new
+              <b>{preview.created}</b> {t("new")}
             </span>
             <span className="text-brass">
-              <b>{preview.updated}</b> update
+              <b>{preview.updated}</b> {t("update")}
             </span>
             <span className="text-ink-mute">
-              <b>{preview.skipped}</b> skip
+              <b>{preview.skipped}</b> {t("skip")}
             </span>
             <span className={preview.errors.length ? "text-alert" : "text-ink-mute"}>
-              <b>{preview.errors.length}</b> errors
+              <b>{preview.errors.length}</b> {t("errors")}
             </span>
           </div>
           {preview.unknown_columns.length > 0 && (
-            <p className="text-xs text-ink-mute">Ignored columns: {preview.unknown_columns.join(", ")}</p>
+            <p className="text-xs text-ink-mute">{t("Ignored columns:")} {preview.unknown_columns.join(", ")}</p>
           )}
           {preview.errors.length > 0 && (
             <div className="max-h-48 overflow-auto rounded-md border border-line bg-card">
               <table className="w-full text-left text-xs">
                 <thead className="sticky top-0 bg-card-2 text-ink-dim">
                   <tr>
-                    <th className="px-3 py-1.5">Line</th>
-                    <th className="px-3 py-1.5">Asset</th>
-                    <th className="px-3 py-1.5">Problem</th>
+                    <th className="px-3 py-1.5">{t("Line")}</th>
+                    <th className="px-3 py-1.5">{t("Asset")}</th>
+                    <th className="px-3 py-1.5">{t("Problem")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,9 +139,9 @@ export function MachineImport({ onDone }: { onDone: () => void }) {
           )}
           <div className="flex flex-wrap items-center gap-3">
             <Button3D variant="primary" icon={<CheckIcon size={16} />} loading={busy} disabled={willWrite === 0} onClick={commit}>
-              Import {willWrite} machine{willWrite === 1 ? "" : "s"}
+              {t(willWrite === 1 ? "Import {n} machine" : "Import {n} machines", { n: willWrite })}
             </Button3D>
-            {preview.errors.length > 0 && <span className="text-xs text-ink-mute">Rows with errors are left out.</span>}
+            {preview.errors.length > 0 && <span className="text-xs text-ink-mute">{t("Rows with errors are left out.")}</span>}
           </div>
         </div>
       )}

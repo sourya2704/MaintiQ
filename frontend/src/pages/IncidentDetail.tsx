@@ -28,6 +28,7 @@ import { Button3D } from "../components/ui/Button3D";
 import { ConfirmDialog, ErrorBox, Panel, Pill, Select, StatusPill, SymptomChip, Textarea, errorText, useToast } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { t } from "../lib/i18n";
 import { PROCESSING_ACTIVE, fileSize, fmtDate, humanize, processingTone, resolutionTone, timeAgo, urgencyTone } from "../lib/format";
 import type { AuditEvent, IncidentDetail as Inc, RelatedResponse, Urgency } from "../lib/types";
 
@@ -183,7 +184,7 @@ export default function IncidentDetail() {
   return (
     <div className="space-y-6">
       <Link to="/incidents" className="inline-flex items-center gap-2 text-sm text-ink-mute hover:text-ink">
-        <ArrowLeft size={16} /> Incidents
+        <ArrowLeft size={16} /> {t("Incidents")}
       </Link>
 
       {/* header */}
@@ -197,7 +198,7 @@ export default function IncidentDetail() {
               <div className="font-mono text-lg font-bold text-rust">{inc.machine.asset_code}</div>
               <div className="text-sm text-ink-dim">{inc.machine.name}</div>
               <div className="font-mono text-[11px] text-ink-mute">
-                {fmtDate(inc.occurred_at, true)} · reported by {inc.reporter?.name ?? "unknown"}
+                {fmtDate(inc.occurred_at, true)} · {t("reported by {name}", { name: inc.reporter?.name ?? t("unknown") })}
               </div>
             </div>
           </Link>
@@ -221,7 +222,7 @@ export default function IncidentDetail() {
           <div className="hazard-stripe h-1.5" />
           <div className="flex items-start gap-3 p-4 text-sm text-ink">
             <ShieldIcon size={22} className="shrink-0 text-alert" />
-            <span>{inc.safety_notice}</span>
+            <span>{t(inc.safety_notice)}</span>
           </div>
         </motion.div>
       )}
@@ -229,7 +230,7 @@ export default function IncidentDetail() {
       {/* failure states */}
       {inc.processing_status === "transcription_failed" && (
         <Panel title="Transcription failed" icon={<IncidentIcon size={18} />}>
-          <p className="text-sm text-ink-dim">{inc.jobs.filter((j) => j.provider === "prisma").at(-1)?.safe_error_message ?? "Prisma could not transcribe this recording."}</p>
+          <p className="text-sm text-ink-dim">{t(inc.jobs.filter((j) => j.provider === "prisma").at(-1)?.safe_error_message ?? "Prisma could not transcribe this recording.")}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {audio?.retention_status === "retained" && (
               <Button3D variant="dark" icon={<RefreshIcon size={16} />} loading={retranscribe.isPending} onClick={() => retranscribe.mutate()}>
@@ -249,7 +250,7 @@ export default function IncidentDetail() {
           <Panel
             title="Transcript"
             icon={<WaveIcon size={18} />}
-            tag={<span className="font-mono text-[10px] uppercase tracking-wider text-ink-mute">{inc.provenance?.transcript}</span>}
+            tag={<span className="font-mono text-[10px] uppercase tracking-wider text-ink-mute">{(inc.provenance?.transcript ?? "").split("; ").map((part) => t(part)).join("; ")}</span>}
             actions={
               transcript &&
               !busy &&
@@ -263,12 +264,12 @@ export default function IncidentDetail() {
           >
             {inc.processing_status === "transcribing" ? (
               <div className="flex items-center gap-3 py-6 text-sm text-brass">
-                <GearIcon size={22} className="animate-spin" /> Gnani Prisma is transcribing the voice note…
+                <GearIcon size={22} className="animate-spin" /> {t("Gnani Prisma is transcribing the voice note…")}
               </div>
             ) : transcriptEdit !== null ? (
               <div className="space-y-3">
-                <Textarea rows={6} value={transcriptEdit} onChange={(e) => setTranscriptEdit(e.target.value)} aria-label="Transcript" autoFocus />
-                {inc.transcript_original && <p className="text-xs text-ink-mute">The original transcript is kept for provenance. Clearing the box reverts to it.</p>}
+                <Textarea rows={6} value={transcriptEdit} onChange={(e) => setTranscriptEdit(e.target.value)} aria-label={t("Transcript")} autoFocus />
+                {inc.transcript_original && <p className="text-xs text-ink-mute">{t("The original transcript is kept for provenance. Clearing the box reverts to it.")}</p>}
                 <div className="flex justify-end gap-2">
                   <Button3D size="sm" variant="ghost" onClick={() => setTranscriptEdit(null)}>Cancel</Button3D>
                   <Button3D
@@ -286,13 +287,13 @@ export default function IncidentDetail() {
                 <blockquote className="rounded-xl border-l-2 border-brass bg-sunk/80 p-4 text-[15px] leading-relaxed text-ink">{transcript}</blockquote>
                 {inc.transcript_edited && inc.transcript_original && (
                   <details className="text-xs text-ink-mute">
-                    <summary className="cursor-pointer hover:text-ink">Original transcript</summary>
+                    <summary className="cursor-pointer hover:text-ink">{t("Original transcript")}</summary>
                     <p className="mt-2 rounded-lg bg-sunk p-3 leading-relaxed">{inc.transcript_original}</p>
                   </details>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-ink-mute">No transcript yet.</p>
+              <p className="text-sm text-ink-mute">{t("No transcript yet.")}</p>
             )}
             {audio && (
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
@@ -303,12 +304,12 @@ export default function IncidentDetail() {
                     </div>
                     <span className="font-mono text-[11px] text-ink-mute">
                       {audio.duration_seconds ? `${audio.duration_seconds.toFixed(1)}s · ` : ""}
-                      {fileSize(audio.size_bytes)} · auto-deletes {fmtDate(audio.delete_after)}
+                      {fileSize(audio.size_bytes)} · {t("auto-deletes {date}", { date: fmtDate(audio.delete_after) })}
                     </span>
-                    <Button3D size="sm" variant="ghost" icon={<TrashIcon size={14} />} onClick={() => setDeleteOpen(audio.id)} aria-label="Delete recording" />
+                    <Button3D size="sm" variant="ghost" icon={<TrashIcon size={14} />} onClick={() => setDeleteOpen(audio.id)} aria-label={t("Delete recording")} />
                   </>
                 ) : (
-                  <span className="text-xs text-ink-mute">Recording deleted {timeAgo(audio.deleted_at)} under the retention policy. The transcript is kept.</span>
+                  <span className="text-xs text-ink-mute">{t("Recording deleted {when} under the retention policy. The transcript is kept.", { when: timeAgo(audio.deleted_at) })}</span>
                 )}
               </div>
             )}
@@ -317,7 +318,7 @@ export default function IncidentDetail() {
                 <Button3D variant="primary" icon={<BearingIcon size={16} />} loading={analyze.isPending} onClick={() => analyze.mutate()}>
                   {hasDraft ? "Re-run Evon analysis" : "Analyse with Evon"}
                 </Button3D>
-                <span className="text-xs text-ink-mute">Correct the transcript first. Evon only works from what is written here.</span>
+                <span className="text-xs text-ink-mute">{t("Correct the transcript first. Evon only works from what is written here.")}</span>
               </div>
             )}
           </Panel>
@@ -328,7 +329,7 @@ export default function IncidentDetail() {
             icon={<BearingIcon size={18} />}
             tag={
               <Pill tone={confirmed ? "ok" : "warn"} className="!normal-case !tracking-normal">
-                {inc.provenance?.structured_fields}
+                {t(inc.provenance?.structured_fields ?? "")}
               </Pill>
             }
             actions={
@@ -356,19 +357,19 @@ export default function IncidentDetail() {
           >
             {inc.processing_status === "analyzing" ? (
               <div className="flex items-center gap-3 py-6 text-sm text-taupe">
-                <GearIcon size={22} className="animate-spin" /> Gnani Evon is drafting the incident and checking it against failure memory…
+                <GearIcon size={22} className="animate-spin" /> {t("Gnani Evon is drafting the incident and checking it against failure memory…")}
               </div>
             ) : inc.processing_status === "analysis_failed" ? (
               <div className="space-y-3">
                 <ErrorBox error={new Error(inc.jobs.filter((j) => j.provider === "evon").at(-1)?.safe_error_message ?? "Analysis failed")} />
-                <p className="text-sm text-ink-mute">Your transcript is safe. Retry the analysis from the transcript panel.</p>
+                <p className="text-sm text-ink-mute">{t("Your transcript is safe. Retry the analysis from the transcript panel.")}</p>
               </div>
             ) : !hasDraft ? (
-              <p className="text-sm text-ink-mute">Not analysed yet. Review the transcript, then run Evon.</p>
+              <p className="text-sm text-ink-mute">{t("Not analysed yet. Review the transcript, then run Evon.")}</p>
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-dim">Summary</h3>
+                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-dim">{t("Summary")}</h3>
                   {editing ? (
                     <Textarea rows={2} value={d.summary ?? ""} onChange={(e) => setD("summary")(e.target.value)} />
                   ) : (
@@ -378,8 +379,8 @@ export default function IncidentDetail() {
                 <div className="flex flex-wrap items-center gap-2">
                   {inc.symptom_tags.map((t) => <SymptomChip key={t} tag={t} />)}
                   {editing ? (
-                    <Select value={d.urgency} onChange={(e) => setD("urgency")(e.target.value as Urgency)} className="!h-8 !w-auto text-xs" aria-label="Urgency">
-                      {["unknown", "needs_review", "routine", "urgent"].map((u) => <option key={u} value={u}>{humanize(u)}</option>)}
+                    <Select value={d.urgency} onChange={(e) => setD("urgency")(e.target.value as Urgency)} className="!h-8 !w-auto text-xs" aria-label={t("Urgency")}>
+                      {["unknown", "needs_review", "routine", "urgent"].map((u) => <option key={u} value={u}>{t(humanize(u))}</option>)}
                     </Select>
                   ) : null}
                 </div>
@@ -406,8 +407,8 @@ export default function IncidentDetail() {
                 </div>
                 {(inc.analysis_warnings.length > 0 || inc.confidence_notes) && (
                   <div className="space-y-1.5 rounded-xl border border-line bg-sunk/70 p-3 text-xs text-ink-mute">
-                    {inc.analysis_warnings.map((w) => <p key={w} className="text-warn">⚠ {w}</p>)}
-                    {inc.confidence_notes && <p>{inc.confidence_notes}</p>}
+                    {inc.analysis_warnings.map((w) => <p key={w} className="text-warn">⚠ {t(w)}</p>)}
+                    {inc.confidence_notes && <p>{t(inc.confidence_notes)}</p>}
                   </div>
                 )}
                 {!confirmed && !editing && (
@@ -415,12 +416,12 @@ export default function IncidentDetail() {
                     <Button3D variant="primary" size="lg" icon={<CheckIcon size={18} />} onClick={() => setConfirmOpen(true)}>
                       Confirm incident
                     </Button3D>
-                    <span className="text-xs text-ink-mute">Confirming marks these fields as technician-reviewed.</span>
+                    <span className="text-xs text-ink-mute">{t("Confirming marks these fields as technician-reviewed.")}</span>
                   </div>
                 )}
                 {confirmed && (
                   <p className="text-xs text-ok">
-                    Confirmed by {inc.confirmed_by?.name ?? "a technician"} {timeAgo(inc.confirmed_at)}.
+                    {t("Confirmed by {name} {when}.", { name: inc.confirmed_by?.name ?? t("a technician"), when: timeAgo(inc.confirmed_at) })}
                   </p>
                 )}
               </div>
@@ -428,7 +429,7 @@ export default function IncidentDetail() {
           </Panel>
 
           {/* outcomes */}
-          <Panel title="Maintenance outcome" icon={<WrenchIcon size={18} />} tag={<span className="text-[11px] text-ink-mute">{inc.provenance?.outcome}</span>}>
+          <Panel title="Maintenance outcome" icon={<WrenchIcon size={18} />} tag={<span className="text-[11px] text-ink-mute">{t(inc.provenance?.outcome ?? "")}</span>}>
             {inc.outcomes.length > 0 && (
               <ol className="mb-5 space-y-3">
                 {inc.outcomes.map((o) => (
@@ -441,8 +442,8 @@ export default function IncidentDetail() {
                     </div>
                     <p className="mt-2 text-sm text-ink">{o.action_performed}</p>
                     <p className="mt-1 text-xs">
-                      {o.verified_cause ? <span className="text-ok">Verified cause: {o.verified_cause}</span> : <span className="text-ink-mute">Cause not verified</span>}
-                      {o.parts_used.length > 0 && <span className="text-ink-mute"> · Parts: {o.parts_used.join(", ")}</span>}
+                      {o.verified_cause ? <span className="text-ok">{t("Verified cause:")} {o.verified_cause}</span> : <span className="text-ink-mute">{t("Cause not verified")}</span>}
+                      {o.parts_used.length > 0 && <span className="text-ink-mute"> · {t("Parts:")} {o.parts_used.join(", ")}</span>}
                     </p>
                     {o.notes && <p className="mt-1 text-xs text-ink-mute">{o.notes}</p>}
                   </li>
@@ -452,18 +453,18 @@ export default function IncidentDetail() {
             {inc.resolution_status !== "resolved" ? (
               <OutcomeForm onSubmit={outcome.mutateAsync} />
             ) : (
-              <p className="text-sm text-ink-mute">Resolved. Record another outcome only if the fault returns, as a new incident.</p>
+              <p className="text-sm text-ink-mute">{t("Resolved. Record another outcome only if the fault returns, as a new incident.")}</p>
             )}
           </Panel>
         </div>
 
         <div className="space-y-6">
           <GuidePanel inc={inc} onGenerate={() => troubleshoot.mutate()} busy={troubleshoot.isPending} />
-          <Panel title="Failure memory" icon={<MemoryIcon size={18} />} tag={<span className="text-[11px] text-ink-mute">related past incidents</span>}>
+          <Panel title="Failure memory" icon={<MemoryIcon size={18} />} tag={<span className="text-[11px] text-ink-mute">{t("related past incidents")}</span>}>
             {transcript ? (
               <RelatedList data={related.data} loading={related.isLoading} error={related.error} />
             ) : (
-              <p className="text-sm text-ink-mute">Related history appears once a transcript exists.</p>
+              <p className="text-sm text-ink-mute">{t("Related history appears once a transcript exists.")}</p>
             )}
           </Panel>
 
@@ -484,7 +485,7 @@ export default function IncidentDetail() {
 
           <Panel title="AI processing log" icon={<ClockIcon size={18} />}>
             {inc.jobs.length === 0 ? (
-              <p className="text-sm text-ink-mute">No AI calls yet.</p>
+              <p className="text-sm text-ink-mute">{t("No AI calls yet.")}</p>
             ) : (
               <ul className="space-y-2">
                 {inc.jobs.map((j) => (
@@ -494,13 +495,13 @@ export default function IncidentDetail() {
                     <Pill tone={j.status === "succeeded" ? "ok" : j.status === "failed" ? "alert" : "brass"}>{j.status}</Pill>
                     <span className="font-mono text-ink-mute">{j.model}</span>
                     {j.latency_ms != null && <span className="ml-auto font-mono text-ink-mute">{j.latency_ms} ms</span>}
-                    {j.safe_error_message && <span className="w-full text-alert">{j.safe_error_message}</span>}
+                    {j.safe_error_message && <span className="w-full text-alert">{t(j.safe_error_message)}</span>}
                   </li>
                 ))}
               </ul>
             )}
             <button className="mt-4 text-xs text-brass hover:underline" onClick={() => setShowAudit((s) => !s)}>
-              {showAudit ? "Hide" : "Show"} audit trail
+              {t(showAudit ? "Hide audit trail" : "Show audit trail")}
             </button>
             <AnimatePresence>
               {showAudit && (
@@ -509,7 +510,7 @@ export default function IncidentDetail() {
                     <li key={a.id} className="flex gap-2 text-xs">
                       <span className="w-28 shrink-0 font-mono text-ink-mute">{fmtDate(a.created_at, true)}</span>
                       <span className="text-ink-dim">
-                        {a.actor?.name ?? "system"} · <span className="text-ink">{humanize(a.action)}</span>
+                        {a.actor?.name ?? t("system")} · <span className="text-ink">{t(humanize(a.action))}</span>
                       </span>
                     </li>
                   ))}
@@ -523,12 +524,7 @@ export default function IncidentDetail() {
       <ConfirmDialog
         open={confirmOpen}
         title="Confirm this incident?"
-        body={
-          <>
-            You are confirming that the summary, symptoms, observations and actions match what happened. Suspected causes stay
-            labelled as hypotheses.
-          </>
-        }
+        body="You are confirming that the summary, symptoms, observations and actions match what happened. Suspected causes stay labelled as hypotheses."
         confirmLabel="Confirm"
         busy={confirm.isPending}
         onConfirm={() => confirm.mutate()}

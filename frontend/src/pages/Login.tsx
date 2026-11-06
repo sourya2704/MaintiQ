@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { BearingIcon, MemoryIcon, MicIcon, ShieldIcon } from "../components/icons/MachineIcons";
 import { Logo } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
+import { BilingualLoop, Say, useBilingual } from "../components/ui/Bilingual";
 import { ErrorBox, Field, Input } from "../components/ui/kit";
 import { useAuth } from "../lib/auth";
 
@@ -16,6 +17,16 @@ const FEATURES = [
 ];
 
 export default function Login() {
+  return (
+    <BilingualLoop>
+      <LoginScreen />
+    </BilingualLoop>
+  );
+}
+
+/** Sign-in and registration. Shown before a language is chosen, so all text loops English ⇄ Hindi. */
+function LoginScreen() {
+  const { say } = useBilingual();
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,10 +55,12 @@ export default function Login() {
     <div className="grid min-h-screen lg:grid-cols-[minmax(420px,520px)_1fr]">
       <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
         <Logo />
-        <h1 className="mt-10 font-display text-4xl font-bold uppercase leading-none tracking-wide">
-          {mode === "login" ? "Sign in" : "Set up your plant"}
+        <h1 className="mt-10 font-display text-4xl font-bold uppercase leading-snug tracking-wide">
+          <Say>{mode === "login" ? "Sign in" : "Set up your plant"}</Say>
         </h1>
-        <p className="mt-2 text-ink-dim">Voice-first maintenance records for industrial teams.</p>
+        <p className="mt-2 min-h-[1.5em] text-ink-dim">
+          <Say>Voice-first maintenance records for industrial teams.</Say>
+        </p>
 
         <div className="mt-8 grid grid-cols-2 rounded-lg border border-line bg-sunk p-1" role="tablist">
           {(["login", "register"] as const).map((m) => (
@@ -58,7 +71,7 @@ export default function Login() {
               onClick={() => setMode(m)}
               className={`rounded-md py-2 text-sm font-semibold transition ${mode === m ? "bg-card text-ink shadow-sm" : "text-ink-mute hover:text-ink"}`}
             >
-              {m === "login" ? "Sign in" : "New organisation"}
+              <Say caret={false}>{m === "login" ? "Sign in" : "New organisation"}</Say>
             </button>
           ))}
         </div>
@@ -66,18 +79,18 @@ export default function Login() {
         <form onSubmit={submit} className="mt-6 space-y-4">
           {mode === "register" && (
             <>
-              <Field label="Organisation">
-                <Input required minLength={2} value={form.org} onChange={set("org")} placeholder="Acme Steel – Plant 2" />
+              <Field label={<Say caret={false}>Organisation</Say>}>
+                <Input required minLength={2} value={form.org} onChange={set("org")} placeholder={say("Acme Steel – Plant 2")} />
               </Field>
-              <Field label="Your name">
+              <Field label={<Say caret={false}>Your name</Say>}>
                 <Input required value={form.name} onChange={set("name")} autoComplete="name" />
               </Field>
             </>
           )}
-          <Field label="Email">
+          <Field label={<Say caret={false}>Email</Say>}>
             <Input required type="email" value={form.email} onChange={set("email")} autoComplete="email" />
           </Field>
-          <Field label="Password" hint={mode === "register" ? "At least 8 characters" : undefined}>
+          <Field label={<Say caret={false}>Password</Say>} hint={mode === "register" ? <Say caret={false}>At least 8 characters</Say> : undefined}>
             <Input
               required
               type="password"
@@ -89,12 +102,12 @@ export default function Login() {
           </Field>
           {Boolean(error) && <ErrorBox error={error} />}
           <Button3D type="submit" variant="primary" size="lg" block loading={busy}>
-            {mode === "login" ? "Sign in" : "Create organisation"}
+            <Say caret={false}>{mode === "login" ? "Sign in" : "Create organisation"}</Say>
           </Button3D>
         </form>
         {mode === "login" && (
           <p className="mt-5 text-sm text-ink-mute">
-            Demo plant (fictional): <span className="font-mono text-ink-dim">tech@demo-mantiq.example.com</span>
+            <Say caret={false}>Demo plant (fictional):</Say> <span className="font-mono text-ink-dim">tech@demo-mantiq.example.com</span>
           </p>
         )}
       </div>
@@ -105,20 +118,29 @@ export default function Login() {
         </Suspense>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-espresso via-espresso/90 to-transparent p-10 pt-24">
           <p className="max-w-lg font-display text-4xl font-bold uppercase leading-tight tracking-wide text-cream">
-            Every fault remembered. <span className="text-[#d9b98a]">Every fix reused.</span>
+            <Say>Every fault remembered.</Say>{" "}
+            <span className="text-[#d9b98a]">
+              <Say>Every fix reused.</Say>
+            </span>
           </p>
           <div className="mt-6 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-4">
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-3">
                 <Icon size={20} className="mt-0.5 shrink-0 text-[#d9b98a]" />
                 <div>
-                  <div className="text-sm font-semibold text-cream">{title}</div>
-                  <div className="text-sm text-cream/60">{body}</div>
+                  <div className="text-sm font-semibold text-cream">
+                    <Say caret={false}>{title}</Say>
+                  </div>
+                  <div className="text-sm text-cream/60">
+                    <Say caret={false}>{body}</Say>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-xs text-cream/40">Powered by Gnani Prisma, Evon and Timbre · decision support only</p>
+          <p className="mt-8 text-xs text-cream/40">
+            <Say caret={false}>Powered by Gnani Prisma, Evon and Timbre · decision support only</Say>
+          </p>
         </div>
       </div>
     </div>

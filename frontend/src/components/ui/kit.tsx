@@ -10,6 +10,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { humanize, type Tone } from "../../lib/format";
+import { t, tNode } from "../../lib/i18n";
 import { CheckIcon, GearsIcon, IncidentIcon, SymptomIcon, XIcon } from "../icons/MachineIcons";
 import { Button3D } from "./Button3D";
 
@@ -27,7 +28,7 @@ export function Pill({ tone = "mute", children, dot, className = "" }: { tone?: 
   return (
     <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${toneClasses[tone]} ${className}`}>
       {dot && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
-      {children}
+      {tNode(children)}
     </span>
   );
 }
@@ -35,7 +36,7 @@ export function Pill({ tone = "mute", children, dot, className = "" }: { tone?: 
 export function StatusPill({ value, tones }: { value: string; tones: Record<string, Tone> }) {
   return (
     <Pill tone={tones[value] ?? "mute"} dot>
-      {humanize(value)}
+      {t(humanize(value))}
     </Pill>
   );
 }
@@ -44,7 +45,7 @@ export function SymptomChip({ tag }: { tag: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-sunk px-2 py-1 text-xs text-ink-dim">
       <SymptomIcon tag={tag} size={14} className="text-rust" />
-      {humanize(tag)}
+      {t(humanize(tag))}
     </span>
   );
 }
@@ -70,7 +71,7 @@ export function Panel({
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
           <div className="group flex flex-wrap items-center gap-2.5">
             {icon && <span className="text-rust">{icon}</span>}
-            <h2 className="font-display text-base font-bold uppercase tracking-wide text-ink">{title}</h2>
+            <h2 className="font-display text-base font-bold uppercase tracking-wide text-ink">{tNode(title)}</h2>
             {tag}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -84,12 +85,12 @@ export function Panel({
 const fieldBase =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-mute outline-none transition focus:border-rust focus:ring-2 focus:ring-rust/15 disabled:opacity-60";
 
-export function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: ReactNode }) {
+export function Field({ label, hint, error, children }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-ink-dim">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-ink-dim">{tNode(label)}</span>
       {children}
-      {error ? <span className="block text-xs text-alert">{error}</span> : hint ? <span className="block text-xs text-ink-mute">{hint}</span> : null}
+      {error ? <span className="block text-xs text-alert">{t(error)}</span> : hint ? <span className="block text-xs text-ink-mute">{tNode(hint)}</span> : null}
     </label>
   );
 }
@@ -104,8 +105,8 @@ export function EmptyState({ title, body, action, icon }: { title: string; body?
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-10 text-center">
       <div className="text-ink-mute">{icon ?? <GearsIcon size={36} />}</div>
-      <p className="font-display text-base font-bold uppercase tracking-wide text-ink-dim">{title}</p>
-      {body && <p className="max-w-md text-sm text-ink-mute">{body}</p>}
+      <p className="font-display text-base font-bold uppercase tracking-wide text-ink-dim">{t(title)}</p>
+      {body && <p className="max-w-md text-sm text-ink-mute">{t(body)}</p>}
       {action}
     </div>
   );
@@ -116,7 +117,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 }
 
 export function ErrorBox({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
-  const message = error instanceof Error ? error.message : "Something went wrong";
+  const message = errorText(error);
   return (
     <div role="alert" className="flex items-start gap-3 rounded-xl border border-alert/40 bg-alert/10 p-4 text-sm text-alert">
       <IncidentIcon size={18} className="mt-0.5 shrink-0" />
@@ -134,7 +135,7 @@ export function Stat({ label, value, sub, tone = "brass" }: { label: string; val
   const color = { brass: "text-brass", rust: "text-rust", alert: "text-alert", ok: "text-ok", warn: "text-warn" }[tone];
   return (
     <div>
-      <div className="text-xs font-semibold uppercase tracking-wide text-ink-mute">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-ink-mute">{t(label)}</div>
       <div className={`mt-1 font-display text-4xl font-bold ${color}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-ink-mute">{sub}</div>}
     </div>
@@ -175,7 +176,7 @@ export function ConfirmDialog({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label={title}
+            aria-label={t(title)}
             initial={{ scale: 0.96, y: 8 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.98, opacity: 0 }}
@@ -184,15 +185,15 @@ export function ConfirmDialog({
           >
             {danger && <div className="hazard-stripe h-1.5" />}
             <div className="space-y-2 p-6">
-              <h3 className="font-display text-lg font-bold uppercase tracking-wide">{title}</h3>
-              <div className="text-sm text-ink-dim">{body}</div>
+              <h3 className="font-display text-lg font-bold uppercase tracking-wide">{t(title)}</h3>
+              <div className="text-sm text-ink-dim">{tNode(body)}</div>
             </div>
             <div className="flex justify-end gap-3 border-t border-line bg-sunk/50 px-6 py-4">
               <Button3D variant="ghost" onClick={onClose}>
                 Cancel
               </Button3D>
               <Button3D variant={danger ? "danger" : "primary"} loading={busy} onClick={onConfirm} autoFocus>
-                {confirmLabel}
+                {t(confirmLabel)}
               </Button3D>
             </div>
           </motion.div>
@@ -211,8 +212,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const push = useCallback((tone: Toast["tone"], text: string) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, tone, text }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    setToasts((list) => [...list, { id, tone, text: t(text) }]);
+    setTimeout(() => setToasts((list) => list.filter((x) => x.id !== id)), 4500);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
@@ -242,5 +243,5 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export const useToast = () => useContext(ToastCtx);
 
 export function errorText(e: unknown) {
-  return e instanceof Error ? e.message : "Something went wrong";
+  return t(e instanceof Error ? e.message : "Something went wrong");
 }

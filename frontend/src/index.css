@@ -28,8 +28,8 @@
   --color-warn: #b7791f;
   --color-alert: #b23a2e;
 
-  --font-display: "Barlow Condensed", "Barlow", system-ui, sans-serif;
-  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Barlow Condensed", "Barlow", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-sans: "Barlow", "Noto Sans Devanagari", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
@@ -121,5 +121,33 @@ body {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+}
+
+/* Hindi: letter-spacing pulls Devanagari vowel signs away from their letters,
+   and uppercase has no meaning, so both are reset wherever Hindi is shown. */
+:lang(hi),
+:lang(hi) * {
+  letter-spacing: normal !important;
+}
+/* tight headings would clip the marks above and below Devanagari letters */
+:lang(hi) .leading-none,
+:lang(hi) .leading-tight {
+  line-height: 1.3;
+}
+
+/* blinking caret for the English ⇄ Hindi typewriter */
+.typing-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: currentColor;
+  animation: caret-blink 0.8s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
   }
 }

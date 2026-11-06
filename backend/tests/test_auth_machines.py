@@ -67,3 +67,15 @@ def test_machine_optional_details_can_be_cleared(client, auth):
     assert r.status_code == 200
     body = r.json()
     assert body["manufacturer"] is None and body["location"] is None and body["name"] == m["name"]
+
+
+def test_language_preference_is_saved_and_returned_on_login(client):
+    headers = register(client, email="lang@x.example.com")
+    assert client.get("/api/auth/me", headers=headers).json()["preferred_language"] is None
+
+    r = client.put("/api/auth/me/language", headers=headers, json={"language": "hi"})
+    assert r.status_code == 200 and r.json()["preferred_language"] == "hi"
+    login = client.post("/api/auth/login", json={"email": "lang@x.example.com", "password": "Password123!"}).json()
+    assert login["user"]["preferred_language"] == "hi"
+
+    assert client.put("/api/auth/me/language", headers=headers, json={"language": "fr"}).status_code == 422

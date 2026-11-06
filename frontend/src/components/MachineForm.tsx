@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { Machine, MachineStatus } from "../lib/types";
+import { t } from "../lib/i18n";
 import { Button3D } from "./ui/Button3D";
 import { ErrorBox, Field, Input, Select } from "./ui/kit";
 
@@ -51,7 +52,7 @@ export function MachineForm({
         <Input required value={m.asset_code} onChange={set("asset_code")} pattern="[A-Za-z0-9][A-Za-z0-9._\-/ ]*" />
       </Field>
       <Field label="Name">
-        <Input required value={m.name} onChange={set("name")} placeholder="Line 1 drive motor" />
+        <Input required value={m.name} onChange={set("name")} placeholder={t("Line 1 drive motor")} />
       </Field>
       <Field label="Type" hint="Machines of the same type are compared in failure memory">
         <Input required list="machine-types" value={m.type} onChange={set("type")} />
@@ -65,7 +66,7 @@ export function MachineForm({
         <Select value={m.status} onChange={set("status")}>
           {(["operational", "degraded", "down", "retired"] as MachineStatus[]).map((s) => (
             <option key={s} value={s}>
-              {s}
+              {t(s)}
             </option>
           ))}
         </Select>
@@ -77,7 +78,7 @@ export function MachineForm({
         <Input value={m.model ?? ""} onChange={set("model")} />
       </Field>
       <Field label="Location">
-        <Input value={m.location ?? ""} onChange={set("location")} placeholder="Line 1, Bay A" />
+        <Input value={m.location ?? ""} onChange={set("location")} placeholder={t("Line 1, Bay A")} />
       </Field>
       <div className="flex items-end justify-end gap-2">
         {onCancel && (
