@@ -53,6 +53,13 @@ class AudioOut(ORM):
     created_at: datetime
 
 
+class PhotoOut(ORM):
+    id: uuid.UUID
+    mime_type: str
+    size_bytes: int
+    created_at: datetime
+
+
 class JobOut(ORM):
     id: uuid.UUID
     provider: str
@@ -169,6 +176,7 @@ class IncidentDetail(IncidentListItem):
     updated_at: datetime
     outcomes: list[OutcomeOut]
     audio_assets: list[AudioOut]
+    photos: list[PhotoOut] = Field(default_factory=list)
     jobs: list[JobOut]
     guide: dict[str, Any] | None
     guide_source: AnalysisSource | None

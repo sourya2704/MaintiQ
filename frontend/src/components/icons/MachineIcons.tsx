@@ -37,6 +37,27 @@ export const GearIcon = (p: P) => (
   </Svg>
 );
 
+/** Settings: three sliders, so it never looks like the brand mark. */
+export const SlidersIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+    <circle cx="15" cy="6" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="17" cy="18" r="2" />
+  </Svg>
+);
+
+/** Brand mark: five voice-waveform bars whose outline reads as an "M". */
+export const MantiqMark = ({ size = 20, ...rest }: P) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+    <rect x="2.5" y="3.5" width="3" height="17" rx="1.5" />
+    <rect x="6.75" y="7.5" width="3" height="13" rx="1.5" />
+    <rect x="10.5" y="11.5" width="3" height="9" rx="1.5" />
+    <rect x="14.25" y="7.5" width="3" height="13" rx="1.5" />
+    <rect x="18.5" y="3.5" width="3" height="17" rx="1.5" />
+  </svg>
+);
+
 export const GearsIcon = (p: P) => (
   <Svg {...p}>
     <g className="spin-part">
@@ -356,6 +377,12 @@ export const GlobeIcon = (p: P) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+  </Svg>
+);
+export const CameraIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" />
+    <circle cx="12" cy="13" r="3.5" />
   </Svg>
 );
 export const KeyboardIcon = (p: P) => (

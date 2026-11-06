@@ -68,7 +68,7 @@ export function PipelineStepper({ inc }: { inc: IncidentDetail }) {
             >
               {spinning ? <GearIcon size={22} className="animate-spin" /> : st === "done" ? <CheckIcon size={22} /> : st === "failed" ? <XIcon size={22} /> : <Icon size={22} />}
             </div>
-            <span className={`text-[10px] font-semibold uppercase tracking-wider sm:text-[11px] ${st === "todo" || st === "skipped" ? "text-ink-mute" : "text-ink-dim"}`}>
+            <span className={`text-[10px] font-semibold sm:text-[11px] ${st === "todo" || st === "skipped" ? "text-ink-mute" : "text-ink-dim"}`}>
               {t(st === "skipped" ? (key === "prisma" ? "Typed (no STT)" : "Skipped") : label)}
             </span>
           </li>
@@ -102,7 +102,7 @@ export function ListBlock({
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-wide text-ink-dim">{t(title)}</h3>
+        <h3 className="text-[11px] font-bold text-ink-dim">{t(title)}</h3>
         {badge}
       </div>
       {items.length === 0 && !editing ? (
@@ -214,7 +214,6 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
                 ) : (
                   <Pill tone="mute">Outcome unknown/unrecorded</Pill>
                 )}
-                {r.is_seed && <Pill tone="mute">demo data</Pill>}
                 <LinkIcon size={14} className="ml-auto text-ink-mute group-hover:text-brass" />
               </div>
             </Link>

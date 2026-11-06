@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { KeyboardIcon, MachineTypeIcon, MicIcon, UploadIcon } from "../components/icons/MachineIcons";
+import { CameraIcon, KeyboardIcon, MachineTypeIcon, MicIcon, UploadIcon } from "../components/icons/MachineIcons";
+import { PendingPhotos, PhotoButtons, uploadPhotos } from "../components/incident/Photos";
 import { Recorder } from "../components/incident/Recorder";
 import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
-import { ErrorBox, Field, Panel, Select, Textarea, useToast } from "../components/ui/kit";
+import { ErrorBox, Field, Panel, Select, Textarea, errorText, useToast } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { fileSize } from "../lib/format";
 import { currentLang, t } from "../lib/i18n";
@@ -25,7 +26,14 @@ export default function NewIncident() {
   const qc = useQueryClient();
   const toast = useToast();
   const [machineId, setMachineId] = useState(params.get("machine") ?? "");
-  const [mode, setMode] = useState<Mode>("record");
+  const startMode = params.get("mode");
+  const [mode, setMode] = useState<Mode>(startMode === "type" || startMode === "upload" ? startMode : "record");
+  const [photos, setPhotos] = useState<File[]>([]);
+  const photoPanel = useRef<HTMLDivElement>(null);
+  // "Take photos" on the home screen lands here with the photo step in view.
+  useEffect(() => {
+    if (startMode === "photo") photoPanel.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [startMode]);
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
   // Hindi users usually speak Hindi: default the voice-note language to match the interface.
@@ -49,7 +57,14 @@ export default function NewIncident() {
       else if (file) form.set("audio_file", file, file.name);
       return api.upload<IncidentDetail>("/api/incidents", form, { "Idempotency-Key": idempotencyKey });
     },
-    onSuccess: (inc) => {
+    onSuccess: async (inc) => {
+      if (photos.length) {
+        try {
+          await uploadPhotos(inc.id, photos);
+        } catch (e) {
+          toast("alert", errorText(e));
+        }
+      }
       qc.invalidateQueries({ queryKey: ["incidents"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast("ok", mode === "type" ? "Incident created" : "Voice note uploaded. Transcribing with Prisma…");
@@ -178,6 +193,14 @@ export default function NewIncident() {
             </motion.div>
           </AnimatePresence>
         </Panel>
+
+        <div ref={photoPanel} className={`rounded-xl ${startMode === "photo" ? "ring-2 ring-rust/50" : ""}`}>
+          <Panel title="3 · Photos" icon={<CameraIcon size={18} />} tag={<span className="text-xs text-ink-mute">{t("optional")}</span>}>
+            <p className="mb-3 text-sm text-ink-dim">{t("Photograph the damaged part, the leak, a gauge or the fault code on the display.")}</p>
+            <PhotoButtons disabled={submit.isPending || photos.length >= 8} onPick={(f) => setPhotos((p) => [...p, ...f].slice(0, 8))} />
+            <PendingPhotos files={photos} onRemove={(i) => setPhotos((p) => p.filter((_, j) => j !== i))} />
+          </Panel>
+        </div>
 
         {submit.error && <ErrorBox error={submit.error} />}
         <div className="flex flex-col items-center gap-3">

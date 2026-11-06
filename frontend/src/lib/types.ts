@@ -156,6 +156,7 @@ export interface IncidentDetail extends IncidentListItem {
   updated_at: string;
   outcomes: Outcome[];
   audio_assets: AudioAsset[];
+  photos: PhotoAsset[];
   jobs: Job[];
   guide: TroubleshootingGuide | null;
   guide_source: string | null;
@@ -285,4 +286,11 @@ export interface ImportReport {
   errors: { line: number; asset_code: string | null; message: string }[];
   unknown_columns: string[];
   dry_run: boolean;
+}
+
+export interface PhotoAsset {
+  id: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
 }

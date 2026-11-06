@@ -57,7 +57,7 @@ uv run uvicorn app.main:app --reload
 ```
 API docs: http://localhost:8000/docs
 
-Demo logins (fictional): `admin@`, `supervisor@` and `tech@demo-mantiq.example.com`. The password is `SEED_PASSWORD`, or the default set in `scripts/seed.py`.
+Sample plant logins: `asha.verma@narmadasteel.example.com` (admin), `sunil.rao@…` (supervisor) and `ravi.kumar@…` (mechanic). The password is `SEED_PASSWORD`, or the default set in `scripts/seed.py`.
 
 ## Demo voice notes
 `backend/demo_audio/` holds synthetic voice notes for the PRD test scenarios. They were generated with Gnani Timbre by `uv run python -m scripts.make_demo_audio`:

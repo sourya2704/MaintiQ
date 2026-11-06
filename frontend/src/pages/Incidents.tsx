@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { IncidentIcon, MicIcon, SearchBoltIcon } from "../components/icons/MachineIcons";
 import { IncidentRow } from "../components/incident/IncidentRow";
@@ -7,6 +7,7 @@ import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
 import { EmptyState, ErrorBox, Input, Panel, Select, Skeleton } from "../components/ui/kit";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { humanize } from "../lib/format";
 import { t } from "../lib/i18n";
 import type { IncidentListItem, Machine, Page } from "../lib/types";
@@ -22,6 +23,12 @@ export default function Incidents() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [qInput, setQInput] = useState(params.get("q") ?? "");
+  const { user } = useAuth();
+  const mechanic = user?.role === "technician";
+  // Mechanics open this as "My reports": start on their own incidents.
+  useEffect(() => {
+    if (mechanic && params.size === 0) setParams(new URLSearchParams({ mine: "true" }), { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const get = (k: string) => params.get(k) ?? "";
   const page = Number(get("page") || 1);
   const setParam = (k: string, v: string) => {
@@ -46,8 +53,8 @@ export default function Incidents() {
   return (
     <div>
       <PageHeader
-        kicker="Incident log"
-        title="Incidents"
+        kicker={mechanic ? undefined : "Incident log"}
+        title={mechanic ? "My reports" : "Incidents"}
         icon={<IncidentIcon size={28} />}
         actions={<Button3D variant="primary" icon={<MicIcon size={16} />} onClick={() => navigate("/report")}>Report fault</Button3D>}
       />
@@ -72,9 +79,9 @@ export default function Incidents() {
             <option value="">{t("Any symptom")}</option>
             {tags.data?.map((tag) => <option key={tag} value={tag}>{t(humanize(tag))}</option>)}
           </Select>
-          {(Object.keys(FILTERS) as (keyof typeof FILTERS)[]).map((k) => (
+          {(Object.keys(FILTERS) as (keyof typeof FILTERS)[]).filter((k) => !mechanic || k === "resolution_status").map((k) => (
             <Select key={k} aria-label={t(humanize(k))} value={get(k)} onChange={(e) => setParam(k, e.target.value)}>
-              <option value="">{t("{field}: any", { field: t(humanize(k).replace(" status", "")) })}</option>
+              <option value="">{t("{field}: any", { field: ((f) => f.charAt(0).toUpperCase() + f.slice(1))(t(humanize(k).replace(" status", ""))) })}</option>
               {FILTERS[k].map((v) => <option key={v} value={v}>{t(humanize(v))}</option>)}
             </Select>
           ))}

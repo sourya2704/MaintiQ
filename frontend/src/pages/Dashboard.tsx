@@ -73,8 +73,8 @@ export default function Dashboard() {
           <GearTrain className="absolute inset-y-0 right-0 hidden w-[45%] md:block" />
         </Suspense>
         <div className="relative max-w-xl p-6 sm:p-8">
-          <div className="font-mono text-[11px] uppercase tracking-wider text-brass">{t("Control room")}</div>
-          <h1 className="mt-2 font-display text-3xl font-bold uppercase leading-tight tracking-wide sm:text-4xl">
+          <div className="font-mono text-[11px] text-brass">{t("Control room")}</div>
+          <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-wide sm:text-4xl">
             {t("Hello, {name}", { name: user?.name.split(" ")[0] ?? "" })}
           </h1>
           <p className="mt-3 text-sm text-ink-dim">

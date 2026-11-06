@@ -5,7 +5,7 @@ from app.models import Incident, Machine, Organization
 from scripts.seed import seed
 
 
-def login_seed(client, email="tech@demo-mantiq.example.com"):
+def login_seed(client, email="ravi.kumar@narmadasteel.example.com"):
     from scripts.seed import PASSWORD
 
     tok = client.post("/api/auth/login", json={"email": email, "password": PASSWORD}).json()["access_token"]
@@ -96,3 +96,22 @@ def test_dashboard_resolved_count_uses_resolve_date(client):
     d = client.get("/api/dashboard/summary", headers=login_seed(client)).json()
     # Seed rows were all written just now; old fixes must not count as resolved this month.
     assert d["incidents"]["resolved_last_30_days"] == len(recent) < resolved_total
+
+
+def test_seed_renames_a_legacy_demo_plant(client):
+    from app.core.security import hash_password
+    from app.models import User
+    from scripts import seed as seed_module
+
+    with SessionLocal() as db:
+        org = Organization(name=seed_module.LEGACY_ORG_NAME)
+        db.add(org)
+        db.flush()
+        db.add(User(organization_id=org.id, name="Ravi Technician", email="tech@demo-mantiq.example.com",
+                    password_hash=hash_password("x" * 10), role="technician"))
+        db.commit()
+    seed()
+    with SessionLocal() as db:
+        names = db.scalars(select(Organization.name)).all()
+        user = db.scalar(select(User).where(User.email == "ravi.kumar@narmadasteel.example.com"))
+    assert names == [seed_module.ORG_NAME] and user.name == "Ravi Kumar"

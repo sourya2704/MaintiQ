@@ -55,7 +55,7 @@ function LoginScreen() {
     <div className="grid min-h-screen lg:grid-cols-[minmax(420px,520px)_1fr]">
       <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
         <Logo />
-        <h1 className="mt-10 font-display text-4xl font-bold uppercase leading-snug tracking-wide">
+        <h1 className="mt-10 font-display text-4xl font-bold leading-snug tracking-wide">
           <Say>{mode === "login" ? "Sign in" : "Set up your plant"}</Say>
         </h1>
         <p className="mt-2 min-h-[1.5em] text-ink-dim">
@@ -105,11 +105,6 @@ function LoginScreen() {
             <Say caret={false}>{mode === "login" ? "Sign in" : "Create organisation"}</Say>
           </Button3D>
         </form>
-        {mode === "login" && (
-          <p className="mt-5 text-sm text-ink-mute">
-            <Say caret={false}>Demo plant (fictional):</Say> <span className="font-mono text-ink-dim">tech@demo-mantiq.example.com</span>
-          </p>
-        )}
       </div>
 
       <div className="relative hidden overflow-hidden bg-espresso lg:block">
@@ -117,7 +112,7 @@ function LoginScreen() {
           <GearTrain className="absolute inset-0" />
         </Suspense>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-espresso via-espresso/90 to-transparent p-10 pt-24">
-          <p className="max-w-lg font-display text-4xl font-bold uppercase leading-tight tracking-wide text-cream">
+          <p className="max-w-lg font-display text-4xl font-bold leading-tight tracking-wide text-cream">
             <Say>Every fault remembered.</Say>{" "}
             <span className="text-[#d9b98a]">
               <Say>Every fix reused.</Say>
