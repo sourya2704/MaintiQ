@@ -80,3 +80,19 @@ def test_asset_code_and_hindi_words_are_searchable(client):
     res = client.get("/api/memory/search", headers=login_seed(client), params={"q": "P-201 status"}).json()
     assert res["results"] and all(r["machine"]["asset_code"] == "P-201" for r in res["results"])
     assert any("p-201" in x for x in res["results"][0]["rationale"])
+
+
+def test_dashboard_resolved_count_uses_resolve_date(client):
+    from datetime import timedelta
+
+    from app.db.base import utcnow
+    from app.models import MaintenanceOutcome
+
+    seed()
+    with SessionLocal() as db:
+        recent = {o.incident_id for o in db.scalars(select(MaintenanceOutcome)).all()
+                  if o.resolution_status == "resolved" and o.resolved_at and o.resolved_at >= utcnow() - timedelta(days=30)}
+        resolved_total = len(db.scalars(select(Incident).where(Incident.resolution_status == "resolved")).all())
+    d = client.get("/api/dashboard/summary", headers=login_seed(client)).json()
+    # Seed rows were all written just now; old fixes must not count as resolved this month.
+    assert d["incidents"]["resolved_last_30_days"] == len(recent) < resolved_total
