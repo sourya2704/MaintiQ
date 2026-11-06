@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -18,13 +19,19 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(user_id: uuid.UUID, organization_id: uuid.UUID, role: str) -> str:
+def password_stamp(password_hash: str) -> str:
+    """Short fingerprint of the stored hash. Tokens carry it, so a password change ends older sessions."""
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+
+
+def create_access_token(user_id: uuid.UUID, organization_id: uuid.UUID, role: str, password_hash: str = "") -> str:
     settings = get_settings()
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "org": str(organization_id),
         "role": role,
+        "pwd": password_stamp(password_hash),
         "iat": now,
         "exp": now + timedelta(minutes=settings.access_token_minutes),
     }

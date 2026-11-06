@@ -27,7 +27,7 @@ from app.models.enums import AnalysisSource, JobStatus
 from app.services import audit, memory_engine
 from app.services.extraction import is_unsafe_advice, parse_model_json
 from app.services.pipeline import _finish
-from app.services.providers import evon
+from app.services.providers import evon, gemini
 from app.services.providers.base import CallMeta, ProviderError
 from app.services.symptoms import detect_hazard, tag_symptoms
 
@@ -60,6 +60,17 @@ def _clean(values: list[str], limit: int = 8) -> list[str]:
     return out[:limit]
 
 
+def _as_list(v):
+    """Models sometimes send one sentence where a list is expected."""
+    if v is None:
+        return []
+    return [v] if isinstance(v, str) else v
+
+
+def _clip(limit: int):
+    return lambda v: v[:limit] if isinstance(v, str) else v
+
+
 class GuideCause(BaseModel):
     cause: str = Field(min_length=1, max_length=200)
     likelihood: Likelihood = "possible"
@@ -72,10 +83,12 @@ class GuideCause(BaseModel):
         v = str(v or "").strip().lower().replace("_", " ")
         return v if v in ("higher", "possible", "less likely") else "possible"
 
-    @field_validator("evidence", "history_refs")
+    @field_validator("evidence", "history_refs", mode="before")
     @classmethod
     def _lists(cls, v):
-        return _clean(v, 5)
+        return _clean(_as_list(v), 5)
+
+    _cause = field_validator("cause", mode="before")(classmethod(lambda cls, v: _clip(200)(v)))
 
 
 class GuideStep(BaseModel):
@@ -83,6 +96,13 @@ class GuideStep(BaseModel):
     why: str = Field(default="", max_length=300)
     expected_finding: str = Field(default="", max_length=300)
     safety: str | None = Field(default=None, max_length=200)
+
+    @field_validator("action", "why", "expected_finding", "safety", mode="before")
+    @classmethod
+    def _trim(cls, v, info):
+        if isinstance(v, str) and v.strip().lower() in ("null", "none", "n/a", "na", "-"):
+            v = None  # models sometimes spell out an empty value
+        return _clip({"action": 400, "safety": 200}.get(info.field_name, 300))(v or ("" if info.field_name != "safety" else None))
 
 
 class Guide(BaseModel):
@@ -94,10 +114,15 @@ class Guide(BaseModel):
     do_not: list[str] = Field(default_factory=list)
     confidence_notes: str = Field(default="", max_length=600)
 
-    @field_validator("parts_to_have", "escalate_if", "do_not")
+    @field_validator("parts_to_have", "escalate_if", "do_not", mode="before")
     @classmethod
     def _lists(cls, v):
-        return _clean(v)
+        return _clean(_as_list(v))
+
+    @field_validator("summary", "confidence_notes", mode="before")
+    @classmethod
+    def _trim_text(cls, v, info):
+        return _clip(800 if info.field_name == "summary" else 600)(v or "")
 
     @field_validator("likely_causes")
     @classmethod
@@ -392,14 +417,73 @@ def postprocess(guide: Guide, inc: Incident, history: list[dict]) -> dict:
         "do_not": do_not,
         "confidence_notes": guide.confidence_notes,
         "history_used": history,
+        "fixed_before": fixed_before(history),
+        "sources": [],
         "warnings": warnings,
         "disclaimer": DISCLAIMER,
     }
 
 
+def fixed_before(history: list[dict]) -> list[dict]:
+    """Verified fixes from this plant's own records, shown first and straight from the database."""
+    return [
+        {k: h[k] for k in ("ref", "incident_id", "asset_code", "date", "verified_cause", "outcome_action", "same_machine")}
+        for h in history
+        if h["resolution_status"] == "resolved" and h["outcome_action"]
+    ]
+
+
+GEMINI_INSTRUCTIONS = """
+Use Google Search to check manufacturer manuals, maintenance guides and engineering references for this kind of
+machine and fault, and combine that with the plant history. Prefer the plant's own verified fixes when they match.
+Write steps a mechanic can follow on the shop floor: one action per step, specific tools and measurements, in order.
+Reply with ONLY a JSON object (no markdown) with keys: summary, likely_causes (cause, likelihood, evidence,
+history_refs), steps (action, why, expected_finding, safety), parts_to_have, escalate_if, do_not, confidence_notes.
+"""
+
+
+def _report(inc: Incident, history: list[dict]) -> str:
+    m = inc.machine
+    return (
+        f"Machine: {m.asset_code} — {m.name}; type={m.type}; manufacturer={m.manufacturer or 'unknown'}; model={m.model or 'unknown'}\n"
+        f"Reported symptoms: {', '.join(inc.symptoms) or 'none listed'}\n"
+        f"Observations: {'; '.join(inc.observations) or 'none'}\n"
+        f"Checks already done: {'; '.join(inc.actions_taken) or 'none'}\n"
+        f"Missing information: {'; '.join(inc.missing_information) or 'none'}\n\n"
+        f"Related past incidents from this plant:\n{_history_prompt(history)}\n\n"
+        f"<report>\n{inc.transcript}\n</report>\n\nReturn the JSON troubleshooting guide."
+    )
+
+
+def _generate_gemini(inc: Incident, history: list[dict]) -> tuple[dict, CallMeta, int]:
+    settings = get_settings()
+    search_first = ("First search the web for this machine type and these symptoms (manufacturer manuals, maintenance "
+                    "guides), then answer.\n\n") if settings.ai_web_search else ""
+    prompt = search_first + _report(inc, history)
+    last: ProviderError | None = None
+    for attempt in range(1, 3):
+        text, sources, meta = gemini.generate(
+            prompt, system=SYSTEM_PROMPT + GEMINI_INSTRUCTIONS, use_search=settings.ai_web_search,
+            json_output=not settings.ai_web_search,
+        )
+        try:
+            guide = Guide.model_validate(parse_model_json(text))
+        except (ValueError, ValidationError):
+            last = ProviderError("gemini_invalid_output", "The AI suggestion did not come back in the expected format")
+            prompt = _report(inc, history) + "\n\nYour last reply was not valid JSON. Reply with ONLY the JSON object."
+            continue
+        out = postprocess(guide, inc, history)
+        out["sources"] = sources
+        return out, meta, attempt
+    assert last is not None
+    raise last
+
+
 def generate(db: Session, inc: Incident) -> tuple[dict, CallMeta, int]:
     settings = get_settings()
     history = _history(db, inc)
+    if settings.ai_mode == "live":
+        return _generate_gemini(inc, history)
     if settings.evon_mode == "mock":
         return postprocess(mock_guide(inc, history), inc, history), CallMeta("evon", "evon-mock", "mock", latency_ms=0), 1
 
@@ -440,10 +524,12 @@ def begin(db: Session, inc: Incident, actor_id: uuid.UUID | None) -> AIProcessin
     if running:
         _finish(running, error=ProviderError("stale_job", "Generation did not finish; marked failed so it can be retried"))
     settings = get_settings()
-    job = AIProcessingJob(
-        incident_id=inc.id, provider="evon", task="troubleshooting",
-        model=settings.evon_model if settings.evon_mode == "live" else "evon-mock", mode=settings.evon_mode,
-    )
+    if settings.ai_mode == "live":
+        provider, model, mode = "gemini", settings.gemini_model, "live"
+    else:
+        provider, mode = "evon", settings.evon_mode
+        model = settings.evon_model if mode == "live" else "evon-mock"
+    job = AIProcessingJob(incident_id=inc.id, provider=provider, task="troubleshooting", model=model, mode=mode)
     db.add(job)
     audit.record(db, organization_id=inc.organization_id, actor_id=actor_id, entity_type="incident",
                  entity_id=inc.id, action="troubleshooting_requested", details={"mode": job.mode})
@@ -470,7 +556,9 @@ def run(incident_id: uuid.UUID, job_id: uuid.UUID) -> None:
             db.commit()
             return
         inc.guide = guide
-        inc.guide_source = AnalysisSource.evon if meta.mode == "live" else AnalysisSource.evon_mock
+        inc.guide_source = {"gemini": "gemini", "evon": AnalysisSource.evon}.get(meta.provider, "evon") \
+            if meta.mode == "live" else AnalysisSource.evon_mock
+        inc.guide_translations = {}
         inc.guide_generated_at = utcnow()
         job.attempts = attempts
         _finish(job, meta=meta)

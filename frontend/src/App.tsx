@@ -16,6 +16,7 @@ const Incidents = lazy(() => import("./pages/Incidents"));
 const IncidentDetail = lazy(() => import("./pages/IncidentDetail"));
 const MemorySearch = lazy(() => import("./pages/MemorySearch"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Messages = lazy(() => import("./pages/Messages"));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
@@ -50,6 +51,8 @@ export default function App() {
           <Route path="incidents/:id" element={<IncidentDetail />} />
           <Route path="memory" element={<MemorySearch />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="messages/:userId" element={<Messages />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

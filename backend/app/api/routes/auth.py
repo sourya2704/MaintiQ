@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
 from app.core.errors import AppError, conflict
-from app.core.rate_limit import auth_rate_limit
+from app.core.rate_limit import account_rate_limit, auth_rate_limit
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models import Organization, User
 from app.models.enums import Role
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def _token(user: User) -> TokenOut:
     return TokenOut(
-        access_token=create_access_token(user.id, user.organization_id, user.role),
+        access_token=create_access_token(user.id, user.organization_id, user.role, user.password_hash),
         user=MeOut.model_validate(user),
     )
 
@@ -52,6 +52,7 @@ def register(body: RegisterIn, db: DB):
 
 @router.post("/login", response_model=TokenOut, dependencies=[Depends(auth_rate_limit)])
 def login(body: LoginIn, db: DB):
+    account_rate_limit(body.email)
     user = db.scalar(select(User).where(User.email == body.email.lower()))
     # Same message for unknown email and wrong password.
     if user is None or not user.is_active or not verify_password(body.password, user.password_hash):
@@ -75,7 +76,7 @@ def set_language(body: LanguageIn, db: DB, user: CurrentUser):
     return user
 
 
-@router.post("/change-password", response_model=Message, dependencies=[Depends(auth_rate_limit)])
+@router.post("/change-password", response_model=TokenOut, dependencies=[Depends(auth_rate_limit)])
 def change_password(body: ChangePasswordIn, db: DB, user: CurrentUser):
     if not verify_password(body.current_password, user.password_hash):
         raise AppError(400, "invalid_credentials", "Current password is incorrect")
@@ -85,4 +86,5 @@ def change_password(body: ChangePasswordIn, db: DB, user: CurrentUser):
     audit.record(db, organization_id=user.organization_id, actor_id=user.id, entity_type="user",
                  entity_id=user.id, action="password_changed")
     db.commit()
-    return Message(message="Password updated")
+    db.refresh(user)
+    return _token(user)  # this device stays signed in; every other session ends

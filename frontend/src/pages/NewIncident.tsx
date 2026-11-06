@@ -85,7 +85,7 @@ export default function NewIncident() {
       <PageHeader kicker="New incident" title="Report a fault" icon={<MicIcon size={28} />} />
 
       <div className="space-y-6">
-        <Panel title="1 · Machine" icon={<MachineTypeIcon type={selected?.type ?? ""} size={18} />}>
+        <Panel title="1. Machine" icon={<MachineTypeIcon type={selected?.type ?? ""} size={18} />}>
           <Field label="Which machine?" hint={selected ? <>{`${selected.type}${selected.location ? ` · ${selected.location}` : ""}`}</> : undefined}>
             <Select value={machineId} onChange={(e) => setMachineId(e.target.value)} required>
               <option value="">{t("Select a machine…")}</option>
@@ -108,7 +108,7 @@ export default function NewIncident() {
         </Panel>
 
         <Panel
-          title="2 · Capture"
+          title="2. Describe the fault"
           icon={<MicIcon size={18} />}
           actions={
             mode !== "type" && (
@@ -195,7 +195,7 @@ export default function NewIncident() {
         </Panel>
 
         <div ref={photoPanel} className={`rounded-xl ${startMode === "photo" ? "ring-2 ring-rust/50" : ""}`}>
-          <Panel title="3 · Photos" icon={<CameraIcon size={18} />} tag={<span className="text-xs text-ink-mute">{t("optional")}</span>}>
+          <Panel title="3. Photos" icon={<CameraIcon size={18} />} tag={<span className="text-xs text-ink-mute">{t("optional")}</span>}>
             <p className="mb-3 text-sm text-ink-dim">{t("Photograph the damaged part, the leak, a gauge or the fault code on the display.")}</p>
             <PhotoButtons disabled={submit.isPending || photos.length >= 8} onPick={(f) => setPhotos((p) => [...p, ...f].slice(0, 8))} />
             <PendingPhotos files={photos} onRemove={(i) => setPhotos((p) => p.filter((_, j) => j !== i))} />

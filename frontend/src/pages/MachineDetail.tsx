@@ -7,6 +7,7 @@ import { Loader } from "../components/ui/Loader";
 import { Button3D } from "../components/ui/Button3D";
 import { EmptyState, ErrorBox, Panel, Pill, StatusPill, useToast } from "../components/ui/kit";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { t } from "../lib/i18n";
 import { fmtDate, humanize, machineStatusTone, resolutionTone, timeAgo, urgencyTone } from "../lib/format";
 import type { IncidentListItem, Machine, MachineDetail as MD, Page } from "../lib/types";
@@ -20,6 +21,7 @@ export default function MachineDetail() {
   const qc = useQueryClient();
   const toast = useToast();
   const [editing, setEditing] = useState(false);
+  const { can } = useAuth();
   const { data: m, isLoading, error, refetch } = useQuery({ queryKey: ["machine", id], queryFn: () => api.get<MD>(`/api/machines/${id}`) });
   const openIncidents = useQuery({
     queryKey: ["incidents", "machine", id],
@@ -55,7 +57,7 @@ export default function MachineDetail() {
             <MachineViewer className="absolute inset-0" kind={machineKind(m.type)} status={m.status} symptoms={[...openTags]} />
           </Suspense>
           <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] text-ink-mute">
-            {t("Drag to orbit · scroll to turn")}
+            {t("Drag to rotate")}
           </div>
           {openTags.size > 0 && (
             <div className="pointer-events-none absolute bottom-4 left-4 flex flex-wrap gap-1.5">
@@ -109,9 +111,11 @@ export default function MachineDetail() {
               <Button3D variant="primary" icon={<MicIcon size={16} />} onClick={() => navigate(`/report?machine=${m.id}`)}>
                 Report fault
               </Button3D>
-              <Button3D variant="neutral" icon={<EditIcon size={16} />} onClick={() => setEditing((e) => !e)}>
-                Edit
-              </Button3D>
+              {can("admin", "supervisor") && (
+                <Button3D variant="neutral" icon={<EditIcon size={16} />} onClick={() => setEditing((e) => !e)}>
+                  Edit
+                </Button3D>
+              )}
             </div>
           </div>
 

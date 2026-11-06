@@ -425,12 +425,16 @@ export default function IncidentDetail() {
                     items={d.suggested_checks}
                     editing={editing}
                     onChange={setD("suggested_checks")}
-                    badge={<Pill tone="mute">advisory · follow site procedures</Pill>}
+                    badge={<Pill tone="mute">Advisory: follow site procedures</Pill>}
                   />
                 </div>
                 {(inc.analysis_warnings.length > 0 || inc.confidence_notes) && (
                   <div className="space-y-1.5 rounded-xl border border-line bg-sunk/70 p-3 text-xs text-ink-mute">
-                    {inc.analysis_warnings.map((w) => <p key={w} className="text-warn">⚠ {t(w)}</p>)}
+                    {inc.analysis_warnings.map((w) => (
+                      <p key={w} className="flex gap-1.5 text-warn">
+                        <IncidentIcon size={13} className="mt-0.5 shrink-0" /> {t(w)}
+                      </p>
+                    ))}
                     {inc.confidence_notes && <p>{t(inc.confidence_notes)}</p>}
                   </div>
                 )}

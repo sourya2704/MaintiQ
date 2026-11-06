@@ -28,6 +28,7 @@ from app.api.deps import (
     require_roles,
 )
 from app.core.config import get_settings
+from app.core.rate_limit import ai_rate_limit
 from app.core.errors import AppError, conflict, forbidden, not_found
 from app.db.base import utcnow
 from app.models import (
@@ -64,7 +65,7 @@ from app.schemas.incidents import (
     ProcessingAccepted,
     RelatedResponse,
 )
-from app.services import audit, memory_engine, pipeline, storage, troubleshooting
+from app.services import audit, memory_engine, pipeline, storage, translation, troubleshooting
 from app.services.providers import timbre
 from app.services.providers.base import ProviderError
 from app.services.symptoms import tag_symptoms
@@ -330,6 +331,7 @@ def transcribe_incident(incident_id: uuid.UUID, db: DB, user: CurrentUser, backg
 @router.post("/{incident_id}/analyze", response_model=ProcessingAccepted, status_code=status.HTTP_202_ACCEPTED)
 def analyze_incident(incident_id: uuid.UUID, db: DB, user: CurrentUser, background: BackgroundTasks):
     """Run or retry Evon structured extraction. Poll GET /api/incidents/{id} for the result."""
+    ai_rate_limit(user.id)
     inc = _load(db, user, incident_id, lock=True)
     job = pipeline.begin_analysis(db, inc, user.id)
     db.commit()
@@ -339,13 +341,67 @@ def analyze_incident(incident_id: uuid.UUID, db: DB, user: CurrentUser, backgrou
 
 @router.post("/{incident_id}/troubleshoot", response_model=ProcessingAccepted, status_code=status.HTTP_202_ACCEPTED)
 def troubleshoot_incident(incident_id: uuid.UUID, db: DB, user: CurrentUser, background: BackgroundTasks):
-    """Generate an advisory troubleshooting guide with Evon, grounded in this plant's related history.
-    Poll GET /api/incidents/{id} (guide_generating, guide) for the result."""
+    """Generate an advisory troubleshooting guide (Gemini with web search when configured, else Evon),
+    grounded in this plant's related history. Poll GET /api/incidents/{id} (guide_generating, guide)."""
+    ai_rate_limit(user.id)
     inc = _load(db, user, incident_id, lock=True)
     job = troubleshooting.begin(db, inc, user.id)
     db.commit()
     background.add_task(troubleshooting.run, inc.id, job.id)
     return ProcessingAccepted(incident_id=inc.id, job_id=job.id, processing_status=inc.processing_status, mode=job.mode)
+
+
+GUIDE_TEXT_KEYS = {"summary", "cause", "evidence", "action", "why", "expected_finding", "safety", "parts_to_have",
+                   "escalate_if", "do_not", "confidence_notes", "verified_cause", "outcome_action"}
+
+
+def _guide_strings(node, key=None, out=None):
+    """Collect the guide's human-readable strings in a stable order (ids, dates and refs are skipped)."""
+    out = [] if out is None else out
+    if isinstance(node, dict):
+        for k in sorted(node):
+            if k not in ("history_used", "sources", "warnings", "disclaimer"):
+                _guide_strings(node[k], k, out)
+    elif isinstance(node, list):
+        for item in node:
+            _guide_strings(item, key, out)
+    elif isinstance(node, str) and key in GUIDE_TEXT_KEYS and node.strip():
+        out.append(node)
+    return out
+
+
+def _guide_replace(node, texts, key=None):
+    if isinstance(node, dict):
+        return {k: (node[k] if k in ("history_used", "sources", "warnings", "disclaimer") else _guide_replace(node[k], texts, k))
+                for k in sorted(node)}
+    if isinstance(node, list):
+        return [_guide_replace(i, texts, key) for i in node]
+    if isinstance(node, str) and key in GUIDE_TEXT_KEYS and node.strip():
+        return next(texts)
+    return node
+
+
+@router.get("/{incident_id}/guide")
+def translated_guide(incident_id: uuid.UUID, db: DB, user: CurrentUser, lang: Literal["en", "hi"] = "hi"):
+    """The troubleshooting guide in the reader's language. Translations are made once and kept."""
+    inc = _load(db, user, incident_id)
+    if not inc.guide:
+        raise not_found("Guide")
+    source_lang = translation.detect_language(inc.guide.get("summary", ""))
+    if lang == source_lang:
+        return {"guide": inc.guide, "translated": False}
+    cached = (inc.guide_translations or {}).get(lang)
+    if cached:
+        return {"guide": cached, "translated": True}
+    ai_rate_limit(user.id)
+    texts = _guide_strings(inc.guide)
+    result = translation.translate(texts, lang) if texts else None
+    if result is None:
+        return {"guide": inc.guide, "translated": False}
+    guide = _guide_replace(inc.guide, iter(result))
+    inc.guide_translations = {**(inc.guide_translations or {}), lang: guide}
+    db.commit()
+    return {"guide": guide, "translated": True}
 
 
 @router.get("/{incident_id}/jobs", response_model=list[JobOut])

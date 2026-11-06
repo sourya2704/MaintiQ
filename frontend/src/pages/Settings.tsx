@@ -1,17 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { BearingIcon, GearIcon, GlobeIcon, ShieldIcon, SpeakerIcon, TrashIcon, UsersIcon, WaveIcon } from "../components/icons/MachineIcons";
+import { BearingIcon, GearIcon, GlobeIcon, SearchBoltIcon, ShieldIcon, SpeakerIcon, TrashIcon, UsersIcon, WaveIcon } from "../components/icons/MachineIcons";
 import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
 import { ErrorBox, Field, Input, Panel, Pill, Select, Skeleton, errorText, useToast } from "../components/ui/kit";
 import { Card } from "../components/ui/Card";
-import { api } from "../lib/api";
+import { api, tokenStore } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { t, useLanguage, type Lang } from "../lib/i18n";
 import { fileSize, timeAgo } from "../lib/format";
 import type { IntegrationStatus, Role, User } from "../lib/types";
 
-const PROVIDER_ICON = { prisma: WaveIcon, evon: BearingIcon, timbre: SpeakerIcon };
+const PROVIDER_ICON: Record<string, typeof WaveIcon> = { prisma: WaveIcon, evon: BearingIcon, gemini: SearchBoltIcon, timbre: SpeakerIcon };
 
 function Integrations() {
   const { can } = useAuth();
@@ -35,7 +35,7 @@ function Integrations() {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
         {data.providers.map((p, i) => {
-          const Icon = PROVIDER_ICON[p.provider];
+          const Icon = PROVIDER_ICON[p.provider] ?? GearIcon;
           const live = p.mode === "live";
           return (
             <Card key={p.provider} delay={i * 0.06}>
@@ -178,8 +178,10 @@ function Password() {
   const toast = useToast();
   const [f, setF] = useState({ current_password: "", new_password: "" });
   const change = useMutation({
-    mutationFn: () => api.post("/api/auth/change-password", f),
-    onSuccess: () => {
+    mutationFn: () => api.post<{ access_token: string }>("/api/auth/change-password", f),
+    onSuccess: (res) => {
+      // The server ends every other session; keep this one with the fresh token.
+      tokenStore.set(res.access_token);
       toast("ok", "Password updated");
       setF({ current_password: "", new_password: "" });
     },

@@ -1,11 +1,16 @@
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { fmtDate, timeAgo } from "../../lib/format";
-import { t } from "../../lib/i18n";
+import { api } from "../../lib/api";
+import { useAuth } from "../../lib/auth";
+import { t, useLanguage } from "../../lib/i18n";
+import type { Contact, TroubleshootingGuide } from "../../lib/types";
 import type { IncidentDetail } from "../../lib/types";
-import { BearingIcon, CheckIcon, GearIcon, RefreshIcon, ShieldIcon, WrenchIcon, XIcon } from "../icons/MachineIcons";
+import { BearingIcon, CheckIcon, GearIcon, IncidentIcon, LinkIcon, RefreshIcon, SendIcon, ShieldIcon, WrenchIcon, XIcon } from "../icons/MachineIcons";
 import { Button3D } from "../ui/Button3D";
-import { Panel, Pill } from "../ui/kit";
+import { ErrorBox, Field, Panel, Pill, Select, Textarea, errorText, useToast } from "../ui/kit";
 
 const LIKELIHOOD_TONE = { higher: "rust", possible: "warn", "less likely": "mute" } as const;
 
@@ -29,8 +34,79 @@ function useTicks(incidentId: string, generatedAt: string | null) {
   return [ticks, (n: number) => setTicks((t) => (t.includes(n) ? t.filter((x) => x !== n) : [...t, n]))] as const;
 }
 
+/** Supervisor picks a mechanic; the steps arrive in the mechanic's messages, in their language. */
+function SendFixDialog({ incidentId, onClose }: { incidentId: string; onClose: () => void }) {
+  const toast = useToast();
+  const contacts = useQuery({ queryKey: ["contacts"], queryFn: () => api.get<Contact[]>("/api/messages/contacts") });
+  const people = [...(contacts.data ?? [])].sort((a, b) => Number(b.role === "technician") - Number(a.role === "technician"));
+  const [to, setTo] = useState("");
+  const [note, setNote] = useState("");
+  const send = useMutation({
+    mutationFn: () => api.post("/api/messages", { recipient_id: to || people[0]?.id, body: note, incident_id: incidentId, send_fix: true }),
+    onSuccess: () => {
+      toast("ok", "Fix sent");
+      onClose();
+    },
+    onError: (e) => toast("alert", errorText(e)),
+  });
+  return (
+    <motion.div className="fixed inset-0 z-50 flex items-end justify-center bg-espresso/50 sm:items-center sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("Send fix to a mechanic")}
+        initial={{ y: 30 }}
+        animate={{ y: 0 }}
+        exit={{ y: 30 }}
+        className="surface w-full max-w-md space-y-4 rounded-t-2xl p-5 sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="font-display text-xl font-semibold">{t("Send fix to a mechanic")}</h3>
+        <p className="text-sm text-ink-dim">{t("They get these steps in Messages, translated into the language they use.")}</p>
+        {contacts.error && <ErrorBox error={contacts.error} />}
+        <Field label="Send to">
+          <Select value={to || people[0]?.id || ""} onChange={(e) => setTo(e.target.value)}>
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({t(p.role)})
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Note" hint="Optional">
+          <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("e.g. Please do this before the night shift")} />
+        </Field>
+        <div className="flex justify-end gap-2">
+          <Button3D variant="ghost" onClick={onClose}>
+            Cancel
+          </Button3D>
+          <Button3D variant="primary" icon={<SendIcon size={16} />} loading={send.isPending} disabled={!people.length} onClick={() => send.mutate()}>
+            Send fix
+          </Button3D>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  gemini: "Suggested by Gemini, checked against the web",
+  evon: "Suggested by Gnani Evon",
+  evon_mock: "Built-in maintenance guide",
+};
+
 export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onGenerate: () => void; busy: boolean }) {
-  const g = inc.guide;
+  const { lang } = useLanguage();
+  const { can } = useAuth();
+  const [sending, setSending] = useState(false);
+  // Shown in the reader's language; the server translates once and keeps it.
+  const translated = useQuery({
+    queryKey: ["guide", inc.id, inc.guide_generated_at, lang],
+    queryFn: () => api.get<{ guide: TroubleshootingGuide; translated: boolean }>(`/api/incidents/${inc.id}/guide`, { lang }),
+    enabled: Boolean(inc.guide) && !inc.guide_generating && lang !== "en",
+    staleTime: Infinity,
+  });
+  const g = translated.data?.guide ?? inc.guide;
   const [ticks, toggle] = useTicks(inc.id, inc.guide_generated_at);
   const hasTranscript = Boolean(inc.transcript_original || inc.transcript_edited);
   const generating = inc.guide_generating || busy;
@@ -40,19 +116,26 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
     <Panel
       title="Troubleshooting guide"
       icon={<WrenchIcon size={18} />}
-      tag={<Pill tone="taupe">{inc.guide_source === "evon_mock" ? "AI-suggested · Evon mock" : "AI-suggested · advisory"}</Pill>}
+      tag={g ? <Pill tone="taupe">{SOURCE_LABEL[inc.guide_source ?? ""] ?? "AI suggestion"}</Pill> : undefined}
       actions={
         g &&
         !generating && (
-          <Button3D size="sm" variant="ghost" icon={<RefreshIcon size={14} />} onClick={onGenerate}>
-            Regenerate
-          </Button3D>
+          <>
+            {can("admin", "supervisor") && (
+              <Button3D size="sm" variant="dark" icon={<SendIcon size={14} />} onClick={() => setSending(true)}>
+                Send to mechanic
+              </Button3D>
+            )}
+            <Button3D size="sm" variant="ghost" icon={<RefreshIcon size={14} />} onClick={onGenerate}>
+              Regenerate
+            </Button3D>
+          </>
         )
       }
     >
       {generating ? (
         <div className="flex items-center gap-3 py-4 text-sm text-ink-dim">
-          <GearIcon size={20} className="animate-spin text-rust" /> {t("Gnani Evon is working through the report and this plant's history…")}
+          <GearIcon size={20} className="animate-spin text-rust" /> {t("Checking this plant's past fixes and published repair guidance…")}
         </div>
       ) : !g ? (
         <div className="space-y-3">
@@ -68,6 +151,22 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
       ) : (
         <div className="space-y-5">
           <p className="text-[15px] text-ink">{g.summary}</p>
+          {g.fixed_before && g.fixed_before.length > 0 && (
+            <section className="rounded-lg bg-ok/10 p-3">
+              <h3 className="mb-2 text-sm font-semibold text-[#4a6129]">{t("Fixed before at this plant")}</h3>
+              <ul className="space-y-2">
+                {g.fixed_before.map((f) => (
+                  <li key={f.ref} className="text-sm text-ink">
+                    <Link to={`/incidents/${f.incident_id}`} className="font-mono text-xs font-bold text-rust hover:underline">
+                      {f.asset_code} · {fmtDate(f.date)}
+                    </Link>
+                    <div>{f.outcome_action}</div>
+                    {f.verified_cause && <div className="text-xs text-ink-mute">{t("Cause:")} {f.verified_cause}</div>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <p className="flex items-start gap-2 rounded-lg border border-warn/35 bg-warn/10 px-3 py-2 text-xs text-ink-dim">
             <ShieldIcon size={15} className="mt-0.5 shrink-0 text-warn" />
             {t(g.disclaimer)}
@@ -171,10 +270,24 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
               </ul>
             </section>
           )}
+          {g.sources && g.sources.length > 0 && (
+            <section>
+              <h3 className="mb-2 text-xs font-bold text-ink-dim">{t("Checked against")}</h3>
+              <ul className="space-y-1">
+                {g.sources.map((src) => (
+                  <li key={src.url}>
+                    <a href={src.url} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex items-center gap-1.5 text-sm text-brass hover:underline">
+                      <LinkIcon size={13} /> {src.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           <div className="space-y-1 border-t border-line pt-3 text-xs text-ink-mute">
             {g.warnings.map((w) => (
-              <p key={w} className="text-warn">
-                ⚠ {t(w)}
+              <p key={w} className="flex gap-1.5 text-warn">
+                <IncidentIcon size={13} className="mt-0.5 shrink-0" /> {t(w)}
               </p>
             ))}
             {g.confidence_notes && <p>{t(g.confidence_notes)}</p>}
@@ -184,6 +297,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           </div>
         </div>
       )}
+      <AnimatePresence>{sending && <SendFixDialog incidentId={inc.id} onClose={() => setSending(false)} />}</AnimatePresence>
     </Panel>
   );
 }

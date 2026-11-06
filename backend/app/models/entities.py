@@ -119,6 +119,8 @@ class Incident(UUIDPk, Timestamps, Base):
     guide: Mapped[dict | None] = mapped_column(JSONB)
     guide_source: Mapped[str | None] = mapped_column(String(20))
     guide_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Cached translations of the guide, keyed by language ("hi": {...}); cleared when the guide is regenerated.
+    guide_translations: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}", nullable=False)
 
     processing_status: Mapped[str] = mapped_column(
         String(30), default=ProcessingStatus.uploaded, index=True, nullable=False
@@ -213,6 +215,32 @@ class IncidentPhoto(UUIDPk, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     incident: Mapped[Incident] = relationship(back_populates="photos")
+
+
+class Message(UUIDPk, Base):
+    """A message between two people in the same organization, optionally carrying a fix for an incident."""
+
+    __tablename__ = "messages"
+    __table_args__ = (Index("ix_messages_recipient_unread", "recipient_id", "read_at"),)
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("organizations.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    sender_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    recipient_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    incident_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("incidents.id", ondelete="SET NULL"))
+    kind: Mapped[str] = mapped_column(String(10), default="text", nullable=False)  # text | fix
+    body: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # For kind="fix": the steps as sent, so later guide changes do not alter what the mechanic received.
+    fix: Mapped[dict | None] = mapped_column(JSONB)
+    language: Mapped[str] = mapped_column(String(5), default="en", nullable=False)
+    translations: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True, nullable=False)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    sender: Mapped[User] = relationship(foreign_keys=[sender_id])
+    recipient: Mapped[User] = relationship(foreign_keys=[recipient_id])
+    incident: Mapped[Incident | None] = relationship()
 
 
 class AIProcessingJob(UUIDPk, Base):

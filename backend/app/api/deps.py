@@ -8,7 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError, forbidden, not_found
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, password_stamp
 from app.db.session import get_db
 from app.models import Incident, Machine, User
 from app.models.enums import Role
@@ -29,7 +29,7 @@ def get_current_user(
     except (jwt.PyJWTError, KeyError, ValueError):
         raise AppError(401, "unauthorized", "Invalid or expired token")
     user = db.get(User, user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or payload.get("pwd") != password_stamp(user.password_hash):
         raise AppError(401, "unauthorized", "Invalid or expired token")
     return user
 

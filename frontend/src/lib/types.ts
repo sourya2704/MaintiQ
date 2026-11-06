@@ -125,7 +125,7 @@ export interface AudioAsset {
 
 export interface Job {
   id: string;
-  provider: "prisma" | "evon" | "timbre";
+  provider: "prisma" | "evon" | "gemini" | "timbre";
   task: "transcription" | "extraction" | "troubleshooting" | "speech";
   model: string;
   mode: "live" | "mock" | "disabled";
@@ -238,7 +238,7 @@ export interface DashboardSummary {
 }
 
 export interface ProviderStatus {
-  provider: "prisma" | "evon" | "timbre";
+  provider: "prisma" | "evon" | "gemini" | "timbre";
   purpose: string;
   mode: "live" | "mock" | "disabled";
   model: string;
@@ -276,6 +276,46 @@ export interface TroubleshootingGuide {
   confidence_notes: string;
   warnings: string[];
   disclaimer: string;
+  fixed_before?: { ref: string; incident_id: string; asset_code: string; date: string; verified_cause: string | null; outcome_action: string; same_machine: boolean }[];
+  sources?: { title: string; url: string }[];
+}
+
+export interface Person {
+  id: string;
+  name: string;
+  role: Role;
+}
+
+export interface Contact extends Person {
+  unread: number;
+  last_at: string | null;
+}
+
+export interface FixPayload {
+  summary: string;
+  steps: { order: number; action: string; why: string | null; expected_finding: string | null; safety: string | null }[];
+  parts_to_have: string[];
+  escalate_if: string[];
+  do_not: string[];
+  note: string;
+}
+
+export interface Message {
+  id: string;
+  sender: Person;
+  recipient: Person;
+  incident_id: string | null;
+  incident_label: string | null;
+  kind: "text" | "fix";
+  body: string;
+  original_body: string;
+  fix: FixPayload | null;
+  language: string;
+  shown_language: string;
+  translated: boolean;
+  created_at: string;
+  read_at: string | null;
+  mine: boolean;
 }
 
 export interface ImportReport {

@@ -59,6 +59,7 @@ class TranscriptSource(StrEnum):
 class AnalysisSource(StrEnum):
     evon = "evon"
     evon_mock = "evon_mock"
+    gemini = "gemini"
     manual = "manual"
     seed = "seed"
 
