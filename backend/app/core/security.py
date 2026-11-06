@@ -12,6 +12,11 @@ def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
+# Verified against when the email is unknown, so a wrong email and a wrong password take the
+# same time and an attacker cannot tell which emails have accounts from the response timing.
+DUMMY_PASSWORD_HASH = hash_password("mantiq-timing-equalizer")
+
+
 def verify_password(password: str, password_hash: str) -> bool:
     try:
         return bcrypt.checkpw(password.encode(), password_hash.encode())

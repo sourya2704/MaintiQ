@@ -3,8 +3,18 @@ from sqlalchemy import func, select
 
 from app.api.deps import DB, CurrentUser
 from app.core.errors import AppError, conflict
-from app.core.rate_limit import account_rate_limit, auth_rate_limit
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.rate_limit import (
+    auth_rate_limit,
+    global_limit,
+    login_account_guard,
+    record_login_failure,
+)
+from app.core.security import (
+    DUMMY_PASSWORD_HASH,
+    create_access_token,
+    hash_password,
+    verify_password,
+)
 from app.db.base import utcnow
 from app.models import Organization, User
 from app.models.enums import Role
@@ -32,6 +42,9 @@ def _token(user: User) -> TokenOut:
              dependencies=[Depends(auth_rate_limit)])
 def register(body: RegisterIn, db: DB):
     """Create a new organization and its first (admin) user."""
+    # A cap that does not depend on the (spoofable) client address, so registration cannot be
+    # used to fill the database by cycling forwarded addresses. Generous for real use.
+    global_limit("register", 100, 3600, "Too many new organizations just now; try again shortly")
     email = body.email.lower()
     if db.scalar(select(func.count()).select_from(User).where(User.email == email)):
         raise conflict("email_taken", "An account with this email already exists")
@@ -54,10 +67,15 @@ def register(body: RegisterIn, db: DB):
 
 @router.post("/login", response_model=TokenOut, dependencies=[Depends(auth_rate_limit)])
 def login(body: LoginIn, db: DB):
-    account_rate_limit(body.email)
+    login_account_guard(body.email)  # too many recent *failures* for this account
     user = db.scalar(select(User).where(User.email == body.email.lower()))
-    # Same message for unknown email and wrong password.
-    if user is None or not user.is_active or not verify_password(body.password, user.password_hash):
+    # Same message and same timing for unknown email, inactive account and wrong password.
+    if user is None or not user.is_active:
+        verify_password(body.password, DUMMY_PASSWORD_HASH)
+        record_login_failure(body.email)
+        raise AppError(401, "invalid_credentials", "Email or password is incorrect")
+    if not verify_password(body.password, user.password_hash):
+        record_login_failure(body.email)
         raise AppError(401, "invalid_credentials", "Email or password is incorrect")
     user.last_login_at = utcnow()
     db.commit()

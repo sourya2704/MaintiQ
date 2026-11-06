@@ -67,3 +67,49 @@ def test_built_assets_are_compressed_and_cached(tmp_path, settings):
         assert r.status_code == 200 and r.headers["content-encoding"] == "gzip"
         assert "immutable" in r.headers["cache-control"]
         assert c.get("/").headers["cache-control"] == "no-cache"
+
+
+def test_login_failure_limit_never_blocks_a_correct_password(client, settings):
+    from app.core import rate_limit
+
+    register(client, email="worker@x.example.com")  # password Password123!
+    settings.auth_rate_limit_per_minute = 1000  # take the per-address limit out of the way
+    settings.login_failures_before_block = 3
+    rate_limit.reset()
+    def login(pw):
+        return client.post("/api/auth/login", json={"email": "worker@x.example.com", "password": pw}).status_code
+    # two wrong tries, then the right one still works (a user is not locked out by their own typos)
+    assert login("nope") == 401 and login("nope") == 401
+    assert login("Password123!") == 200
+    # many correct sign-ins in a row never trip the block (successes are not counted)
+    assert {login("Password123!") for _ in range(8)} == {200}
+    # once failures reach the threshold, the next attempt is blocked
+    assert login("nope") == 401  # third failure, now at the limit
+    assert login("nope") == 429  # fourth is blocked
+
+
+def test_registration_has_a_global_cap_despite_spoofed_addresses(client, settings):
+    from app.core import rate_limit
+
+    settings.auth_rate_limit_per_minute = 1000  # take the per-address limit out of the way
+    rate_limit.reset()
+    rate_limit.note("global:register", 3600)  # pretend the hour is nearly full already
+    # drive the global bucket to its cap using a different forwarded address each time
+    seen = set()
+    for i in range(130):
+        r = client.post("/api/auth/register", headers={"X-Forwarded-For": f"203.0.113.{i % 255}"},
+                        json={"organization_name": f"Org {i}", "name": "A", "email": f"g{i}@x.example.com", "password": "Password123!"})
+        seen.add(r.status_code)
+    assert 429 in seen  # the global cap stops it regardless of the spoofed address
+
+
+def test_contact_form_has_a_global_cap(client, settings):
+    from app.core import rate_limit
+
+    rate_limit.reset()
+    seen = set()
+    for i in range(130):
+        r = client.post("/api/public/contact", headers={"X-Forwarded-For": f"198.51.100.{i % 255}"},
+                        json={"name": f"Person {i}", "contact": f"p{i}@x.example.com", "message": "Hello there"})
+        seen.add(r.status_code)
+    assert 429 in seen

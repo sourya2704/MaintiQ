@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, status
 from pydantic import BaseModel, Field
 
 from app.api.deps import DB
-from app.core.rate_limit import hit
+from app.core.rate_limit import global_limit, hit
 from app.models import ContactRequest
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -26,6 +26,9 @@ def contact(body: ContactIn, request: Request, db: DB):
     """Store a contact request from the website. Limited per address to keep spam out."""
     client = request.client.host if request.client else "unknown"
     hit(f"contact:{client}", 5, 3600, "Too many messages from here; try again later")
+    # The client address comes from a spoofable forwarded header; a global cap bounds how many
+    # rows the public form can create regardless, so it cannot be used to fill the database.
+    global_limit("contact", 120, 3600, "We are receiving many messages right now; please try again later")
     if body.website:  # bots fill every field; people never see this one
         return {"ok": True}
     db.add(ContactRequest(name=body.name.strip(), company=(body.company or "").strip() or None,

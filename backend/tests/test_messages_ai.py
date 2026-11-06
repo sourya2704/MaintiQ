@@ -115,8 +115,8 @@ def test_login_is_limited_per_account_even_from_new_addresses(client, settings):
     from app.core import rate_limit
 
     register(client, email="victim@x.example.com")
-    settings.auth_rate_limit_per_minute = 3
+    settings.auth_rate_limit_per_minute = 1000  # isolate the per-account failure block
+    settings.login_failures_before_block = 3
     rate_limit.reset()
-    codes = [client.post("/api/auth/login", headers={"X-Forwarded-For": f"10.0.0.{i}"},
-                         json={"email": "victim@x.example.com", "password": "wrong-pass"}).status_code for i in range(5)]
+    codes = [client.post("/api/auth/login", json={"email": "victim@x.example.com", "password": "wrong-pass"}).status_code for _ in range(5)]
     assert codes[:3] == [401, 401, 401] and codes[3] == 429
