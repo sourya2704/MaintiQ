@@ -2,7 +2,7 @@
 
 Usage:  uv run python -m scripts.seed [--reset]
 
-Creates one organization with three users, eleven machines (one of each modelled type) and a set of
+Creates one organization with three users, thirty-one machines (one of each modelled type) and a set of
 historical incidents covering repeated symptoms, different outcomes, an
 unresolved case and an incident with no recorded outcome. All rows are marked
 is_seed / source=seed so they are never mistaken for live provider output.
@@ -55,6 +55,26 @@ MACHINES = [
     ("H-701", "Bearing press", "hydraulic press", "Narmada Hydraulics", "HP-100", "Maintenance workshop"),
     ("L-801", "Tool room lathe", "centre lathe", "Vindhya Machine Tools", "CL-460", "Tool room"),
     ("B-901", "Process steam boiler", "steam boiler", "Ganga Thermal", "FT-2000", "Boiler house"),
+    ("V-110", "Machining centre 1", "CNC machining centre", "Vindhya Machine Tools", "VMC-850", "Machine shop"),
+    ("V-111", "Milling machine", "milling machine", "Vindhya Machine Tools", "UM-1250", "Tool room"),
+    ("V-112", "Radial drill", "radial drilling machine", "Vindhya Machine Tools", "RD-50", "Machine shop"),
+    ("V-113", "Surface grinder", "surface grinder", "Vindhya Machine Tools", "SG-600", "Tool room"),
+    ("V-114", "Bar cutting saw", "band saw", "Konark Tools", "BS-260", "Stores"),
+    ("J-210", "Moulding machine 1", "injection moulding machine", "Narmada Plastics Machinery", "IM-120", "Moulding shop"),
+    ("J-211", "Profile extruder", "extruder", "Narmada Plastics Machinery", "SE-65", "Moulding shop"),
+    ("W-310", "Welding robot cell", "industrial robot", "Sahyadri Automation", "R6-10", "Fabrication bay"),
+    ("T-410", "Forklift 3 t", "forklift", "Ganga Material Handling", "FD-30", "Dispatch"),
+    ("T-411", "Workshop jib crane", "jib crane", "Konark Cranes", "JC-1000", "Maintenance workshop"),
+    ("U-510", "Cooling tower cell 1", "cooling tower", "Ganga Thermal", "CT-300", "Utility yard"),
+    ("U-511", "Process chiller", "chiller", "Sahyadri Cooling", "SC-350", "Utility room"),
+    ("U-512", "Main transformer", "transformer", "Vindhya Electricals", "TR-1000", "Substation"),
+    ("U-513", "MCC-02", "motor control centre panel", "Vindhya Electricals", "MCC-415", "Electrical room"),
+    ("U-514", "Plant air compressor 2", "screw compressor", "Sahyadri Air", "SA-37", "Compressor house"),
+    ("P-610", "Batch mixer", "mixing vessel", "Narmada Process", "MV-5000", "Process bay"),
+    ("P-611", "Grain elevator", "bucket elevator", "Konark Conveyors", "BE-40", "Raw material bay"),
+    ("P-612", "Dust collector", "dust collector", "Konark Air Systems", "DC-36", "Process bay"),
+    ("P-613", "Cooler exchanger", "heat exchanger", "Ganga Thermal", "HX-48", "Process bay"),
+    ("P-614", "Packing line 1", "packing machine", "Narmada Packaging", "VFFS-520", "Packing hall"),
 ]
 
 # (asset, days_ago, transcript, summary, symptoms, observations, actions, suspected, outcome | None, urgency, review)

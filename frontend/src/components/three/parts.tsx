@@ -57,6 +57,15 @@ function build() {
     frameOchre: painted("#b98a2e", 0.55, 13),
     darkPaint: painted("#3b3732", 0.5, 14),
     panelGrey: painted("#a7a196", 0.35, 15, 0.2),
+    toolWhite: painted("#d6dadd", 0.3, 16, 0.2), // machine-tool enclosure
+    toolGrey: painted("#59636c", 0.35, 17),
+    robotOrange: painted("#d9731c", 0.3, 18),
+    forkYellow: painted("#d8a51c", 0.5, 19),
+    panelRal: painted("#c9ccc4", 0.25, 20, 0.2), // RAL 7035 control panels
+    trafoGrey: painted("#7a8691", 0.45, 23),
+    towerBlue: painted("#6f8ea3", 0.4, 24, 0.1),
+    greenPaint: painted("#3f6b4c", 0.5, 25),
+    darkGlass: new THREE.MeshPhysicalMaterial({ color: "#2b3a44", roughness: 0.08, transmission: 0.3, transparent: true, opacity: 0.6 }),
     castIron: cast("#4b4640", 21),
     castRed: cast("#6e3324", 22),
     steel: metal("#c4beb3", 0.3),

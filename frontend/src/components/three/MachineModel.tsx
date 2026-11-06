@@ -3,12 +3,17 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Compressor, Conveyor, Gearbox, Motor, Pump, type ModelProps } from "./machinesA";
 import { Boiler, Fan, Generator, Lathe, Press } from "./machinesB";
+import { BandSaw, Extruder, Forklift, InjectionMoulder, JibCrane, MachiningCentre, Mill, RadialDrill, Robot, SurfaceGrinder } from "./machinesC";
+import { BucketElevator, Chiller, ControlPanel, CoolingTower, DustCollector, HeatExchanger, MixingTank, Packer, ScrewCompressor, Transformer } from "./machinesD";
 import { Box, FLOOR, type V3 } from "./parts";
 import { prefersReducedMotion, statusColor } from "./shared";
 
 export { FLOOR };
 
-export type MachineKind = "motor" | "pump" | "conveyor" | "compressor" | "gearbox" | "fan" | "generator" | "press" | "lathe" | "boiler";
+export type MachineKind =
+  | "motor" | "pump" | "conveyor" | "compressor" | "gearbox" | "fan" | "generator" | "press" | "lathe" | "boiler"
+  | "vmc" | "mill" | "drill" | "grinder" | "saw" | "moulder" | "extruder" | "robot" | "forklift" | "crane"
+  | "tower" | "chiller" | "transformer" | "panel" | "mixer" | "elevator" | "screwcomp" | "dust" | "exchanger" | "packer";
 
 export interface MachineVisual {
   kind: MachineKind;
@@ -28,6 +33,26 @@ const MODELS: Record<MachineKind, (p: ModelProps) => React.ReactNode> = {
   press: Press,
   lathe: Lathe,
   boiler: Boiler,
+  vmc: MachiningCentre,
+  mill: Mill,
+  drill: RadialDrill,
+  grinder: SurfaceGrinder,
+  saw: BandSaw,
+  moulder: InjectionMoulder,
+  extruder: Extruder,
+  robot: Robot,
+  forklift: Forklift,
+  crane: JibCrane,
+  tower: CoolingTower,
+  chiller: Chiller,
+  transformer: Transformer,
+  panel: ControlPanel,
+  mixer: MixingTank,
+  elevator: BucketElevator,
+  screwcomp: ScrewCompressor,
+  dust: DustCollector,
+  exchanger: HeatExchanger,
+  packer: Packer,
 };
 
 function Leak({ origin }: { origin: V3 }) {
@@ -106,7 +131,10 @@ function FloorMarking({ w, d, color, highlight }: { w: number; d: number; color:
 }
 
 // Tall machines are drawn at a smaller scale so they fit the same camera framing.
-const SCALE: Partial<Record<MachineKind, number>> = { press: 0.72, boiler: 0.82 };
+const SCALE: Partial<Record<MachineKind, number>> = {
+  press: 0.72, boiler: 0.82, vmc: 0.8, drill: 0.8, robot: 0.85, forklift: 0.85, crane: 0.65, tower: 0.75,
+  transformer: 0.95, panel: 0.85, mixer: 0.68, elevator: 0.55, dust: 0.66, moulder: 0.85, extruder: 0.9, packer: 0.85,
+};
 
 const FOOTPRINT: Record<MachineKind, [number, number]> = {
   motor: [2.4, 1.6],
@@ -119,9 +147,13 @@ const FOOTPRINT: Record<MachineKind, [number, number]> = {
   press: [2.8, 1.6],
   lathe: [2.9, 1.2],
   boiler: [3.4, 1.7],
+  vmc: [2.4, 2.2], mill: [1.8, 1.4], drill: [2.4, 1.4], grinder: [2.2, 1.4], saw: [3.0, 1.2],
+  moulder: [3.6, 1.4], extruder: [3.4, 1.2], robot: [3.0, 2.6], forklift: [2.6, 1.8], crane: [3.0, 1.6],
+  tower: [2.4, 2.4], chiller: [3.4, 1.4], transformer: [2.2, 1.7], panel: [3.0, 1.4], mixer: [2.0, 2.0],
+  elevator: [2.0, 1.6], screwcomp: [2.0, 1.4], dust: [2.6, 1.6], exchanger: [3.4, 1.3], packer: [2.6, 1.5],
 };
 // Where a leak drips from and where smoke rises, per machine.
-const LEAK_ORIGIN: Record<MachineKind, V3> = {
+const LEAK_ORIGIN: Partial<Record<MachineKind, V3>> = {
   motor: [0.95, -0.15, 0.15],
   pump: [-0.68, -0.35, 0.18],
   conveyor: [1.5, 0.05, 0.3],
@@ -133,7 +165,7 @@ const LEAK_ORIGIN: Record<MachineKind, V3> = {
   lathe: [0, 0.05, 0.3],
   boiler: [-0.9, -0.3, 0.6],
 };
-const SMOKE_ORIGIN: Record<MachineKind, V3> = {
+const SMOKE_ORIGIN: Partial<Record<MachineKind, V3>> = {
   motor: [0.05, 0.55, 0],
   pump: [0.85, 0.15, 0],
   conveyor: [1.5, 0.3, 0.8],
@@ -173,8 +205,8 @@ export function MachineMesh({ kind, status, symptoms, highlight }: MachineVisual
           <Model spin={spin} hot={hot} running={running} />
         </group>
       </group>
-      {symptoms.includes("leak") && !reduced && <Leak origin={LEAK_ORIGIN[kind] ?? LEAK_ORIGIN.gearbox} />}
-      {symptoms.includes("smoke_or_burning") && !reduced && <Smoke origin={SMOKE_ORIGIN[kind] ?? SMOKE_ORIGIN.gearbox} />}
+      {symptoms.includes("leak") && !reduced && <Leak origin={LEAK_ORIGIN[kind] ?? [0, -0.5, 0.4]} />}
+      {symptoms.includes("smoke_or_burning") && !reduced && <Smoke origin={SMOKE_ORIGIN[kind] ?? [0, 0.6, 0]} />}
       <FloorMarking w={w} d={d} color={statusColor(status)} highlight={highlight} />
     </group>
   );

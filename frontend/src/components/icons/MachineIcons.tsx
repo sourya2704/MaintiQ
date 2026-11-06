@@ -435,22 +435,49 @@ export function SymptomIcon({ tag, ...p }: P & { tag: string }) {
   return <Icon {...p} />;
 }
 
-export type MachineKindName = "motor" | "pump" | "conveyor" | "compressor" | "gearbox" | "fan" | "generator" | "press" | "lathe" | "boiler";
+export type MachineKindName =
+  | "motor" | "pump" | "conveyor" | "compressor" | "gearbox" | "fan" | "generator" | "press" | "lathe" | "boiler"
+  | "vmc" | "mill" | "drill" | "grinder" | "saw" | "moulder" | "extruder" | "robot" | "forklift" | "crane"
+  | "tower" | "chiller" | "transformer" | "panel" | "mixer" | "elevator" | "screwcomp" | "dust" | "exchanger" | "packer";
+
+// Checked in order: specific names before general ones ("screw compressor" before "compressor").
+const KIND_RULES: [RegExp, MachineKindName][] = [
+  [/cooling tower/, "tower"],
+  [/chiller/, "chiller"],
+  [/transformer/, "transformer"],
+  [/\bmcc\b|control panel|motor control|switchboard|\bpanel\b/, "panel"],
+  [/\bdust\b|bag ?house|cyclone/, "dust"], // word match: "industrial" contains "dust"
+  [/heat exchanger|exchanger|condenser/, "exchanger"],
+  [/bucket elevator|elevator/, "elevator"],
+  [/screw compressor|rotary screw/, "screwcomp"],
+  [/injection|moulding|molding/, "moulder"],
+  [/extruder/, "extruder"],
+  [/robot/, "robot"],
+  [/forklift|fork lift|reach truck/, "forklift"],
+  [/crane|hoist/, "crane"],
+  [/mixer|agitator|vessel|reactor/, "mixer"],
+  [/packing|packer|packaging|form.?fill|ffs|bagging/, "packer"],
+  [/machining cent|\bvmc\b|\bhmc\b|\bcnc\b/, "vmc"],
+  [/milling|\bmill\b/, "mill"],
+  [/drill/, "drill"],
+  [/grinder|grinding/, "grinder"],
+  [/saw/, "saw"],
+  [/pump/, "pump"],
+  [/conveyor|belt/, "conveyor"],
+  [/compressor/, "compressor"],
+  [/fan|blower/, "fan"],
+  [/generator|genset|dg set|alternator/, "generator"],
+  [/press/, "press"],
+  [/lathe|turning/, "lathe"],
+  [/boiler|steam/, "boiler"],
+  [/gearbox|reducer|\bgear/, "gearbox"],
+  [/motor|drive/, "motor"],
+];
 
 /** Which 3D model and icon a machine gets, from its free-text type. */
 export function machineKind(type: string): MachineKindName {
   const t = type.toLowerCase();
-  if (t.includes("pump")) return "pump";
-  if (t.includes("conveyor") || t.includes("belt")) return "conveyor";
-  if (t.includes("compressor")) return "compressor";
-  if (t.includes("fan") || t.includes("blower")) return "fan";
-  if (t.includes("generator") || t.includes("genset") || t.includes("dg set") || t.includes("alternator")) return "generator";
-  if (t.includes("press")) return "press";
-  if (t.includes("lathe") || t.includes("cnc") || t.includes("turning") || t.includes("milling")) return "lathe";
-  if (t.includes("boiler") || t.includes("steam")) return "boiler";
-  if (t.includes("gearbox") || t.includes("reducer") || t.includes("gear")) return "gearbox";
-  if (t.includes("motor") || t.includes("drive")) return "motor";
-  return "gearbox";
+  return KIND_RULES.find(([re]) => re.test(t))?.[1] ?? "gearbox";
 }
 
 export const FanIcon = (p: P) => (
@@ -496,6 +523,26 @@ export function MachineTypeIcon({ type, ...p }: P & { type: string }) {
     press: PressIcon,
     lathe: LatheIcon,
     boiler: BoilerIcon,
+    vmc: LatheIcon,
+    mill: LatheIcon,
+    drill: PressIcon,
+    grinder: LatheIcon,
+    saw: LatheIcon,
+    moulder: PressIcon,
+    extruder: LatheIcon,
+    robot: GearIcon,
+    forklift: ConveyorIcon,
+    crane: PressIcon,
+    tower: FanIcon,
+    chiller: CompressorIcon,
+    transformer: GeneratorIcon,
+    panel: GeneratorIcon,
+    mixer: BoilerIcon,
+    elevator: ConveyorIcon,
+    screwcomp: CompressorIcon,
+    dust: FanIcon,
+    exchanger: BoilerIcon,
+    packer: ConveyorIcon,
   }[machineKind(type)];
   return <Icon {...p} />;
 }

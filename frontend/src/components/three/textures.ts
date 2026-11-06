@@ -303,3 +303,129 @@ export function louvreTexture(base: string) {
   }
   return finish(key, c);
 }
+
+/** Trapezoidal-profile wall cladding: vertical ribs with light and shadow edges. */
+export function corrugatedTexture(base: string, horizontal = false) {
+  const key = `corr:${base}:${horizontal}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const size = 256;
+  const [c, g] = canvas(size);
+  const rnd = seeded(5);
+  g.fillStyle = base;
+  g.fillRect(0, 0, size, size);
+  for (let x = 0; x < size; x += 32) {
+    g.fillStyle = "rgba(255,255,255,0.22)";
+    g.fillRect(x, 0, 6, size);
+    g.fillStyle = "rgba(0,0,0,0.22)";
+    g.fillRect(x + 6, 0, 4, size);
+    g.fillStyle = "rgba(0,0,0,0.08)";
+    g.fillRect(x + 20, 0, 12, size);
+  }
+  speckle(g, size, rnd, 2500, 0.06);
+  if (horizontal) {
+    const rot = document.createElement("canvas");
+    rot.width = rot.height = size;
+    const r = rot.getContext("2d")!;
+    r.translate(size / 2, size / 2);
+    r.rotate(Math.PI / 2);
+    r.drawImage(c, -size / 2, -size / 2);
+    return finish(key, rot);
+  }
+  return finish(key, c);
+}
+
+/** Polished warehouse slab: soft mottling, saw-cut joints every bay, tyre marks. */
+export function slabTexture() {
+  const key = "slab";
+  if (cache.has(key)) return cache.get(key)!;
+  const size = 512;
+  const [c, g] = canvas(size);
+  const rnd = seeded(13);
+  g.fillStyle = "#b9bdc0";
+  g.fillRect(0, 0, size, size);
+  for (let i = 0; i < 70; i++) {
+    const v = 150 + rnd() * 50;
+    g.fillStyle = `rgba(${v},${v + 2},${v + 4},0.18)`;
+    g.beginPath();
+    g.arc(rnd() * size, rnd() * size, 20 + rnd() * 80, 0, Math.PI * 2);
+    g.fill();
+  }
+  speckle(g, size, rnd, 9000, 0.06);
+  g.strokeStyle = "rgba(60,64,68,0.35)";
+  g.lineWidth = 2;
+  g.strokeRect(1, 1, size - 2, size - 2);
+  g.strokeStyle = "rgba(30,30,30,0.06)";
+  g.lineWidth = 14;
+  for (let i = 0; i < 3; i++) {
+    g.beginPath();
+    g.moveTo(0, 100 + i * 140 + rnd() * 30);
+    g.bezierCurveTo(size * 0.3, rnd() * size, size * 0.6, rnd() * size, size, 120 + i * 130);
+    g.stroke();
+  }
+  return finish(key, c, [16, 4]);
+}
+
+/** Soft white puff for clouds (alpha in the texture). */
+export function cloudTexture() {
+  const key = "cloud";
+  if (cache.has(key)) return cache.get(key)!;
+  const size = 256;
+  const [c, g] = canvas(size);
+  const rnd = seeded(29);
+  for (let i = 0; i < 22; i++) {
+    const x = size * (0.25 + rnd() * 0.5);
+    const y = size * (0.35 + rnd() * 0.3);
+    const r = size * (0.12 + rnd() * 0.16);
+    const grad = g.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, "rgba(255,255,255,0.55)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  cache.set(key, tex);
+  return tex;
+}
+
+/** Radial dark falloff laid under each machine instead of real-time shadows. */
+export function blobShadowTexture() {
+  const key = "blob";
+  if (cache.has(key)) return cache.get(key)!;
+  const size = 128;
+  const [c, g] = canvas(size);
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, "rgba(0,0,0,0.45)");
+  grad.addColorStop(0.6, "rgba(0,0,0,0.18)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(c);
+  cache.set(key, tex);
+  return tex;
+}
+
+/** Painted facade sign. */
+export function signTexture(text: string, sub: string) {
+  const key = `sign:${text}:${sub}`;
+  if (cache.has(key)) return cache.get(key)!;
+  const c = document.createElement("canvas");
+  c.width = 1024;
+  c.height = 256;
+  const g = c.getContext("2d")!;
+  g.fillStyle = "#1c232b";
+  g.fillRect(0, 0, 1024, 256);
+  g.fillStyle = "#2e5e8c";
+  const bars = [140, 104, 72, 104, 140];
+  bars.forEach((h, i) => g.fillRect(60 + i * 30, 200 - h, 20, h));
+  g.fillStyle = "#f2f4f6";
+  g.font = "bold 120px 'Barlow Condensed', sans-serif";
+  g.fillText(text, 250, 160);
+  g.fillStyle = "#9cc0e4";
+  g.font = "38px 'Barlow', sans-serif";
+  g.fillText(sub, 254, 215);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  cache.set(key, tex);
+  return tex;
+}
