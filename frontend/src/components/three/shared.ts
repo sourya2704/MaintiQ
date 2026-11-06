@@ -74,7 +74,7 @@ export const MAT = {
   gaugeFace: std("#f1ebdf", 0.0, 0.5),
   glass: new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.05, transmission: 0.6, transparent: true, opacity: 0.35 }),
   needle: std("#b23a2e", 0.2, 0.5),
-  concrete: std("#cdc2b1", 0.0, 0.95),
+  concrete: std("#c7ccd1", 0.0, 0.95),
 };
 
 export const prefersReducedMotion = () => typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;

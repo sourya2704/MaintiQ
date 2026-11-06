@@ -26,17 +26,17 @@ function Label({ code, sub, color, hover }: { code: string; sub: string; color: 
     c.width = 256;
     c.height = 104;
     const g = c.getContext("2d")!;
-    g.fillStyle = "#2e2219";
+    g.fillStyle = "#1c232b";
     g.beginPath();
     g.roundRect(0, 0, 256, 104, 14);
     g.fill();
     g.fillStyle = color;
     g.fillRect(0, 0, 12, 104);
     g.textAlign = "left";
-    g.fillStyle = "#f3ede2";
+    g.fillStyle = "#f2f4f6";
     g.font = "600 42px 'IBM Plex Mono', monospace";
     g.fillText(code, 30, 50);
-    g.fillStyle = "#c9b79c";
+    g.fillStyle = "#9cc0e4";
     g.font = "26px 'IBM Plex Mono', monospace";
     g.fillText(sub, 30, 86);
     const t = new THREE.CanvasTexture(c);
@@ -140,8 +140,8 @@ export default function PlantFloor({
   return (
     <div ref={anchor} className={className}>
       <Canvas camera={{ position: [0, 10, 12], fov: 42 }} dpr={[1, 1.75]} shadows gl={{ antialias: true }}>
-        <color attach="background" args={["#e9e1d3"]} />
-        <fog attach="fog" args={["#e9e1d3", 16, 40]} />
+        <color attach="background" args={["#e6eaee"]} />
+        <fog attach="fog" args={["#e6eaee", 16, 40]} />
         <Studio shadowExtent={extent + 4} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, GROUND - 0.002, 0]} material={MAT.concrete} receiveShadow>
           <planeGeometry args={[80, 80]} />
@@ -151,10 +151,10 @@ export default function PlantFloor({
           infiniteGrid
           cellSize={1}
           cellThickness={0.5}
-          cellColor="#bfb19b"
+          cellColor="#c3cad1"
           sectionSize={spacing}
           sectionThickness={0.9}
-          sectionColor="#a8977d"
+          sectionColor="#a5afb9"
           fadeDistance={34}
           fadeStrength={1.5}
         />

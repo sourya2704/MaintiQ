@@ -23,6 +23,7 @@ class LoginIn(BaseModel):
 class OrganizationOut(ORM):
     id: uuid.UUID
     name: str
+    slug: str | None = None
 
 
 class UserOut(ORM):
@@ -33,6 +34,8 @@ class UserOut(ORM):
     role: Role
     is_active: bool
     preferred_language: Literal["en", "hi"] | None = None
+    last_login_at: datetime | None = None
+    must_change_password: bool = False
     created_at: datetime
 
 
@@ -47,10 +50,23 @@ class TokenOut(BaseModel):
 
 
 class UserCreateIn(BaseModel):
+    """The admin gives a name and role; Mantiq makes the company login and a one-time password."""
+
     name: str = Field(min_length=1, max_length=200)
-    email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
     role: Role = Role.technician
+    email: EmailStr | None = Field(default=None, description="Use the worker's own email instead of a company login")
+
+
+class TeamMemberOut(UserOut):
+    reports: int = 0
+
+
+class AccountIssuedOut(BaseModel):
+    """Shown to the admin once, to hand to the worker."""
+
+    user: TeamMemberOut
+    login_email: str
+    temporary_password: str
 
 
 class UserUpdateIn(BaseModel):

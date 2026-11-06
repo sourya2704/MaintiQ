@@ -6,7 +6,10 @@ import { useAuth } from "./lib/auth";
 import { useLanguage } from "./lib/i18n";
 
 const Login = lazy(() => import("./pages/Login"));
+const Landing = lazy(() => import("./pages/Landing"));
 const ChooseLanguage = lazy(() => import("./pages/ChooseLanguage"));
+const SetPassword = lazy(() => import("./pages/SetPassword"));
+const Team = lazy(() => import("./pages/Team"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const MechanicHome = lazy(() => import("./pages/MechanicHome"));
 const Machines = lazy(() => import("./pages/Machines"));
@@ -23,8 +26,10 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { chosen } = useLanguage();
   const location = useLocation();
   if (loading) return <Loader label="Authenticating" />;
-  if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  // First sign-in after registering: pick English or Hindi before anything else.
+  // Visitors see the public website at the root; any other page asks them to sign in.
+  if (!user) return location.pathname === "/" ? <Landing /> : <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  // First sign-in: replace the admin's one-time password, then pick English or Hindi.
+  if (user.must_change_password) return <SetPassword />;
   if (!chosen) return <ChooseLanguage />;
   return children;
 }
@@ -36,6 +41,7 @@ export default function App() {
     <Suspense fallback={<Loader />}>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" replace /> : <Login />} />
         <Route
           element={
             <RequireAuth>
@@ -52,6 +58,7 @@ export default function App() {
           <Route path="memory" element={<MemorySearch />} />
           <Route path="settings" element={<Settings />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="team" element={<Team />} />
           <Route path="messages/:userId" element={<Messages />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

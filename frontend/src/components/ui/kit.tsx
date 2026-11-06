@@ -16,7 +16,7 @@ import { Button3D } from "./Button3D";
 
 // Solid tinted labels: readable at a glance, no outline or status dot.
 const toneClasses: Record<Tone, string> = {
-  ok: "text-[#4a6129] bg-ok/15",
+  ok: "text-[#256238] bg-ok/15",
   warn: "text-[#8a5a12] bg-warn/15",
   alert: "text-alert bg-alert/12",
   brass: "text-brass-deep bg-brass/12",
@@ -228,7 +228,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               exit={{ opacity: 0 }}
               className="pointer-events-auto flex items-start gap-3 rounded-lg bg-espresso p-3.5 text-sm text-cream shadow-lg"
             >
-              <span className={t.tone === "alert" ? "text-[#e8907f]" : "text-[#b9c98f]"}>
+              <span className={t.tone === "alert" ? "text-[#f0a49b]" : "text-[#9fd4ae]"}>
                 {t.tone === "alert" ? <XIcon size={18} /> : <CheckIcon size={18} />}
               </span>
               <span className="flex-1">{t.text}</span>

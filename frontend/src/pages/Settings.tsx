@@ -1,15 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { BearingIcon, GearIcon, GlobeIcon, SearchBoltIcon, ShieldIcon, SpeakerIcon, TrashIcon, UsersIcon, WaveIcon } from "../components/icons/MachineIcons";
+import { BearingIcon, GearIcon, GlobeIcon, SearchBoltIcon, ShieldIcon, SpeakerIcon, TrashIcon, WaveIcon } from "../components/icons/MachineIcons";
 import { PageHeader } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
-import { ErrorBox, Field, Input, Panel, Pill, Select, Skeleton, errorText, useToast } from "../components/ui/kit";
+import { ErrorBox, Field, Input, Panel, Pill, Skeleton, errorText, useToast } from "../components/ui/kit";
 import { Card } from "../components/ui/Card";
 import { api, tokenStore } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { t, useLanguage, type Lang } from "../lib/i18n";
 import { fileSize, timeAgo } from "../lib/format";
-import type { IntegrationStatus, Role, User } from "../lib/types";
+import type { IntegrationStatus } from "../lib/types";
 
 const PROVIDER_ICON: Record<string, typeof WaveIcon> = { prisma: WaveIcon, evon: BearingIcon, gemini: SearchBoltIcon, timbre: SpeakerIcon };
 
@@ -100,80 +100,6 @@ function Integrations() {
   );
 }
 
-function Users() {
-  const { user: me } = useAuth();
-  const qc = useQueryClient();
-  const toast = useToast();
-  const users = useQuery({ queryKey: ["users"], queryFn: () => api.get<User[]>("/api/users") });
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "technician" as Role });
-  const create = useMutation({
-    mutationFn: () => api.post<User>("/api/users", form),
-    onSuccess: (u) => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      toast("ok", t("{name} added", { name: u.name }));
-      setForm({ name: "", email: "", password: "", role: "technician" });
-    },
-  });
-  const update = useMutation({
-    mutationFn: ({ id, ...body }: { id: string; role?: Role; is_active?: boolean }) => api.patch(`/api/users/${id}`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
-    onError: (e) => toast("alert", errorText(e)),
-  });
-  const isAdmin = me?.role === "admin";
-
-  return (
-    <Panel title="Team" icon={<UsersIcon size={18} />}>
-      {users.error ? (
-        <ErrorBox error={users.error} />
-      ) : (
-        <ul className="divide-y divide-line">
-          {users.data?.map((u) => (
-            <li key={u.id} className="flex flex-wrap items-center gap-3 py-3">
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold">
-                  {u.name} {u.id === me?.id && <span className="text-xs text-ink-mute">({t("you")})</span>}
-                </div>
-                <div className="truncate text-xs text-ink-mute">{u.email}</div>
-              </div>
-              {isAdmin && u.id !== me?.id ? (
-                <>
-                  <Select aria-label={t("Role for {name}", { name: u.name })} value={u.role} onChange={(e) => update.mutate({ id: u.id, role: e.target.value as Role })} className="!h-8 !w-36 text-xs">
-                    {["technician", "supervisor", "admin"].map((r) => <option key={r} value={r}>{t(r)}</option>)}
-                  </Select>
-                  <Button3D size="sm" variant={u.is_active ? "ghost" : "neutral"} onClick={() => update.mutate({ id: u.id, is_active: !u.is_active })}>
-                    {u.is_active ? "Deactivate" : "Reactivate"}
-                  </Button3D>
-                </>
-              ) : (
-                <Pill tone="brass">{u.role}</Pill>
-              )}
-              {!u.is_active && <Pill tone="alert">inactive</Pill>}
-            </li>
-          ))}
-        </ul>
-      )}
-      {isAdmin && (
-        <form
-          className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 lg:grid-cols-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            create.mutate();
-          }}
-        >
-          <Input required placeholder={t("Name")} aria-label={t("Name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          <Input required type="email" placeholder={t("Email")} aria-label={t("Email")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <Input required type="password" minLength={8} placeholder={t("Temporary password")} aria-label={t("Temporary password")} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <Select aria-label={t("Role")} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}>
-            {["technician", "supervisor", "admin"].map((r) => <option key={r} value={r}>{t(r)}</option>)}
-          </Select>
-          <Button3D type="submit" variant="dark" loading={create.isPending}>Add member</Button3D>
-          {create.error && <div className="sm:col-span-2 lg:col-span-5"><ErrorBox error={create.error} /></div>}
-        </form>
-      )}
-    </Panel>
-  );
-}
-
 function Password() {
   const toast = useToast();
   const [f, setF] = useState({ current_password: "", new_password: "" });
@@ -241,7 +167,6 @@ export default function Settings() {
       <PageHeader kicker="Configuration" title="Settings" icon={<GearIcon size={28} />} />
       <Language />
       {can("admin", "supervisor") && <Integrations />}
-      {can("admin", "supervisor") && <Users />}
       <Password />
     </div>
   );

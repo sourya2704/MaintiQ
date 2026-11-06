@@ -11,6 +11,7 @@ import {
   GaugeIcon,
   MantiqMark,
   SlidersIcon,
+  UsersIcon,
   IncidentIcon,
   LogoutIcon,
   MemoryIcon,
@@ -39,6 +40,7 @@ function navFor(isMechanic: boolean): NavEntry[] {
         { to: "/messages", label: "Messages", icon: ChatIcon },
         { to: "/machines", label: "Machines", icon: FactoryIcon },
         { to: "/memory", label: "Failure memory", icon: MemoryIcon },
+        { to: "/team", label: "Team", icon: UsersIcon },
         { to: "/settings", label: "Settings", icon: SlidersIcon },
       ];
 }
@@ -96,7 +98,7 @@ function SideNav({ items }: { items: NavEntry[] }) {
           {({ isActive }) => (
             <>
               {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r bg-rust" />}
-              <Icon size={19} className={isActive ? "text-[#d9b98a]" : "text-cream/50"} />
+              <Icon size={19} className={isActive ? "text-highlight" : "text-cream/50"} />
               {t(label)}
               {to === "/messages" && <Badge n={unread} dark />}
             </>
@@ -211,7 +213,7 @@ export default function AppShell(): ReactNode {
               </div>
               {userCard(false)}
               {items
-                .filter((i) => i.to === "/memory" || i.to === "/settings")
+                .filter((i) => ["/memory", "/team", "/settings"].includes(i.to))
                 .map(({ to, label, icon: Icon }) => (
                   <NavLink key={to} to={to} onClick={() => setOpen(false)} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-dim hover:bg-sunk">
                     <Icon size={18} /> {t(label)}

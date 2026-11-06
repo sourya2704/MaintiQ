@@ -28,6 +28,11 @@ npm install
 npm run dev      # http://localhost:5173 (proxies /api to :8000)
 ```
 
+## Workers and logins
+The person who registers the plant becomes its admin. Workers do not sign up themselves: under **Team**, the admin adds a person with a name and role, and Mantiq creates a company login (for example `ravi.kumar@narmada-steel.mantiq`) and a one-time password to hand over. At first sign-in the worker must set their own password. The Team page lists everyone with role, login, join date, last sign-in and number of reports, and lets the admin change roles, reset passwords and deactivate accounts.
+
+Requests from the public website's contact form are stored in the `contact_requests` table.
+
 ## Deploy to Render
 The repo contains a `render.yaml` Blueprint and a root `Dockerfile`. They build a single service: the API also serves the web app. It comes with a managed Postgres database.
 

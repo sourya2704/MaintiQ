@@ -61,8 +61,8 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           const v = Math.abs(data[i * step] - 128) / 128;
           const bh = Math.max(2 * devicePixelRatio, v * h * 1.8);
           const grad = g.createLinearGradient(0, h / 2 - bh / 2, 0, h / 2 + bh / 2);
-          grad.addColorStop(0, "#8c6a2f");
-          grad.addColorStop(1, "#a0522d");
+          grad.addColorStop(0, "#5b84ad");
+          grad.addColorStop(1, "#2e5e8c");
           g.fillStyle = grad;
           const bw = w / bars - 2 * devicePixelRatio;
           g.fillRect(i * (w / bars), h / 2 - bh / 2, bw, bh);
@@ -160,7 +160,7 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           <span className="absolute inset-0 translate-y-1.5 rounded-full bg-rust-deep" />
           <span
             className={`absolute inset-0 grid place-items-center rounded-full border-2 transition-colors ${
-              recording ? "border-[#7f261d] bg-alert" : "border-rust-deep bg-rust"
+              recording ? "border-[#7a1a12] bg-alert" : "border-rust-deep bg-rust"
             }`}
           >
             {recording ? <StopIcon size={44} className="text-cream" /> : <MicIcon size={46} className="text-cream" />}

@@ -162,7 +162,7 @@ def seed(reset: bool = False) -> None:
             db.delete(org)
             db.commit()
 
-        org = Organization(name=ORG_NAME)
+        org = Organization(name=ORG_NAME, slug="narmada-steel")
         db.add(org)
         db.flush()
         users = {}

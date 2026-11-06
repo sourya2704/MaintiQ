@@ -3,7 +3,7 @@ import json
 import httpx
 
 from app.services.providers import base as provider_base
-from tests.conftest import make_machine, register
+from tests.conftest import add_worker, make_machine, register
 
 GUIDE = {
     "summary": "Seal face wear is the likely cause of the leak.",
@@ -34,10 +34,8 @@ def gemini_transport(monkeypatch, reply_for):
 
 
 def add_member(client, admin, email, role="technician", name="Ravi"):
-    r = client.post("/api/users", headers=admin, json={"name": name, "email": email, "password": "Password123!", "role": role})
-    assert r.status_code == 201
-    tok = client.post("/api/auth/login", json={"email": email, "password": "Password123!"}).json()["access_token"]
-    return r.json()["id"], {"Authorization": f"Bearer {tok}"}
+    uid, _, headers = add_worker(client, admin, name=f"{name} {email.split('@')[0]}", role=role)
+    return uid, headers
 
 
 def incident_with_guide(client, auth):

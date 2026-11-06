@@ -70,6 +70,19 @@ def auth(client):
     return register(client)
 
 
+def add_worker(client, admin, name="Ravi Kumar", role="technician", password="Password123!"):
+    """Admin adds a worker; the worker signs in with the one-time password and sets their own.
+    Returns (user id, login email, auth headers)."""
+    r = client.post("/api/users", headers=admin, json={"name": name, "role": role})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    tok = client.post("/api/auth/login", json={"email": body["login_email"], "password": body["temporary_password"]}).json()["access_token"]
+    changed = client.post("/api/auth/change-password", headers={"Authorization": f"Bearer {tok}"},
+                          json={"current_password": body["temporary_password"], "new_password": password})
+    assert changed.status_code == 200, changed.text
+    return body["user"]["id"], body["login_email"], {"Authorization": f"Bearer {changed.json()['access_token']}"}
+
+
 def make_machine(client, headers, code="M-104", type_="electric motor", name="Drive motor"):
     r = client.post("/api/machines", headers=headers, json={"asset_code": code, "name": name, "type": type_})
     assert r.status_code == 201, r.text

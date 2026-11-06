@@ -1,10 +1,10 @@
 import { lazy, Suspense, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BearingIcon, MemoryIcon, MicIcon, ShieldIcon } from "../components/icons/MachineIcons";
 import { Logo } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
 import { BilingualLoop, Say } from "../components/ui/Bilingual";
-import { tr } from "../lib/i18n";
+import { t, tr } from "../lib/i18n";
 import { ErrorBox, Field, Input } from "../components/ui/kit";
 import { useAuth } from "../lib/auth";
 
@@ -33,7 +33,8 @@ function LoginScreen() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const mode: "login" | "register" = location.pathname === "/register" ? "register" : "login";
+  const setMode = (m: "login" | "register") => navigate(m === "register" ? "/register" : "/login", { replace: true, state: location.state });
   const [form, setForm] = useState({ org: "", name: "", email: "", password: "" });
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
@@ -57,7 +58,14 @@ function LoginScreen() {
   return (
     <div className="grid min-h-screen lg:grid-cols-[minmax(420px,520px)_1fr]">
       <div className="flex flex-col justify-center px-6 py-10 sm:px-12">
-        <Logo />
+        <div className="flex items-center justify-between">
+          <Link to="/" aria-label={t("Back to the website")}>
+            <Logo />
+          </Link>
+          <Link to="/" className="text-sm font-medium text-ink-mute hover:text-ink">
+            ← {t("Website")}
+          </Link>
+        </div>
         <h1 className="mt-10 font-display text-4xl font-bold leading-snug tracking-wide">
           <Say>{mode === "login" ? "Sign in" : "Set up your plant"}</Say>
         </h1>
@@ -116,12 +124,12 @@ function LoginScreen() {
         </Suspense>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-espresso via-espresso/90 to-transparent p-10 pt-24">
           <p className="max-w-lg font-display text-4xl font-bold leading-tight tracking-wide text-cream">
-            Every fault remembered. <span className="text-[#d9b98a]">Every fix reused.</span>
+            Every fault remembered. <span className="text-highlight">Every fix reused.</span>
           </p>
           <div className="mt-6 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-4">
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-3">
-                <Icon size={20} className="mt-0.5 shrink-0 text-[#d9b98a]" />
+                <Icon size={20} className="mt-0.5 shrink-0 text-highlight" />
                 <div>
                   <div className="text-sm font-semibold text-cream">{title}</div>
                   <div className="text-sm text-cream/60">{body}</div>

@@ -66,8 +66,10 @@ def test_mine_filter_and_recurring_symptoms(client, auth):
     m = make_machine(client, auth)
     for text in ("Motor vibrating and hot.", "Vibration again at full speed.", "Grinding noise at start."):
         client.post("/api/incidents", headers=auth, data={"machine_id": m["id"], "transcript": text})
-    client.post("/api/users", headers=auth, json={"name": "T", "email": "t@acme.example.com", "password": "Password123!"})
-    tok = client.post("/api/auth/login", json={"email": "t@acme.example.com", "password": "Password123!"}).json()["access_token"]
+    from tests.conftest import add_worker
+
+    _, _, tech_headers = add_worker(client, auth, name="T")
+    tok = tech_headers["Authorization"].split()[1]
     tech = {"Authorization": f"Bearer {tok}"}
     client.post("/api/incidents", headers=tech, data={"machine_id": m["id"], "transcript": "Leak at seal."})
 

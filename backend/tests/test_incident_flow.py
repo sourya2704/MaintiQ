@@ -238,8 +238,10 @@ def test_confirmed_incident_locked_for_technicians(client, auth):
     inc = manual(client, auth, m["id"], "Fan noisy.")
     client.patch(f"/api/incidents/{inc['id']}", headers=auth, json={"summary": "Noisy fan"})
     client.post(f"/api/incidents/{inc['id']}/confirm", headers=auth)
-    client.post("/api/users", headers=auth, json={"name": "T", "email": "t@acme.example.com", "password": "Password123!"})
-    tok = client.post("/api/auth/login", json={"email": "t@acme.example.com", "password": "Password123!"}).json()["access_token"]
+    from tests.conftest import add_worker
+
+    _, _, tech_headers = add_worker(client, auth, name="T")
+    tok = tech_headers["Authorization"].split()[1]
     r = client.patch(f"/api/incidents/{inc['id']}", headers={"Authorization": f"Bearer {tok}"}, json={"summary": "x"})
     assert r.status_code == 403
 
