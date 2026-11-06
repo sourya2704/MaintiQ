@@ -5,6 +5,7 @@ matches ("shared symptom: vibration") without relying on model scores.
 """
 
 import re
+from functools import lru_cache
 
 SYMPTOM_TAXONOMY: dict[str, tuple[str, ...]] = {
     "vibration": ("vibrat", "shak", "wobbl", "oscillat", "imbalance", "unbalance"),
@@ -54,12 +55,30 @@ NEGATION = re.compile(r"\b(no|not|without|never|nor|none|isn't|wasn't|aren't|wer
 CLAUSE_BREAK = re.compile(r"[.;:!?,]|\b(but|however|although|though|and then)\b")
 
 
+# Endings a cue word may take ("leak" -> "leaking", "trip" -> "tripped", "smoke" -> "smoking").
+# Anything else is a different word: "hum" must not match "humid", nor "hot" "hotel".
+SUFFIXES = (
+    "s", "es", "ed", "d", "ing", "er", "ers", "est", "y", "ly", "ies", "ied", "ion", "ions", "e",
+    "age", "ment", "ant", "ation", "ated", "ating", "ive", "ory", "ness",
+)
+_SUFFIX_RE = "(?:" + "|".join(sorted(SUFFIXES, key=len, reverse=True)) + ")?"
+
+
+@lru_cache(maxsize=512)
+def _cue_pattern(needle: str) -> re.Pattern:
+    stems = [re.escape(needle)]
+    if needle.endswith("e"):
+        stems.append(re.escape(needle[:-1]))  # smoke -> smoking, noise -> noisy
+    doubled = f"(?:{re.escape(needle[-1])})?"  # trip -> tripped, hum -> humming
+    return re.compile(r"\b(?:" + "|".join(stems) + ")" + doubled + _SUFFIX_RE + r"\b")
+
+
 def _affirmed(needle: str, text: str) -> bool:
     """True if `needle` occurs at least once without a negation earlier in the same clause.
 
     "There is no smoke" -> False; "no leak, but heavy smoke" -> True.
     """
-    for m in re.finditer(r"\b" + re.escape(needle), text):
+    for m in _cue_pattern(needle).finditer(text):
         window = text[max(0, m.start() - 40) : m.start()]
         breaks = list(CLAUSE_BREAK.finditer(window))
         clause = window[breaks[-1].end() :] if breaks else window
