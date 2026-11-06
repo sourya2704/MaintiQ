@@ -42,58 +42,71 @@ function cast(color: string, seed: number) {
   return new THREE.MeshStandardMaterial({ map: castTexture(color, seed), metalness: 0.4, roughness: 0.8, bumpMap: grainBump(seed), bumpScale: 1.2 });
 }
 
-let made: ReturnType<typeof build> | null = null;
+// Each finish is created the first time a model asks for it, so building the scene spreads
+// texture drawing across many frames instead of drawing every texture on the first one.
+const FACTORIES = {
+  motorBlue: () => painted("#55687a", 0.45, 2),
+  pumpBlue: () => painted("#2f4f6e", 0.55, 4),
+  machineGreen: () => painted("#5b6b55", 0.5, 6), // classic lathe / machine-tool green
+  gensetYellow: () => painted("#c9a23a", 0.4, 8),
+  pressBlue: () => painted("#3d5c80", 0.35, 9),
+  safetyOrange: () => painted("#c8642b", 0.5, 10),
+  boilerRed: () => painted("#8f3b2a", 0.5, 11),
+  cream: () => painted("#d8ccb2", 0.45, 12, 0.2),
+  frameOchre: () => painted("#b98a2e", 0.55, 13),
+  darkPaint: () => painted("#3b3732", 0.5, 14),
+  panelGrey: () => painted("#a7a196", 0.35, 15, 0.2),
+  toolWhite: () => painted("#d6dadd", 0.3, 16, 0.2), // machine-tool enclosure
+  toolGrey: () => painted("#59636c", 0.35, 17),
+  robotOrange: () => painted("#d9731c", 0.3, 18),
+  forkYellow: () => painted("#d8a51c", 0.5, 19),
+  panelRal: () => painted("#c9ccc4", 0.25, 20, 0.2), // RAL 7035 control panels
+  trafoGrey: () => painted("#7a8691", 0.45, 23),
+  towerBlue: () => painted("#6f8ea3", 0.4, 24, 0.1),
+  greenPaint: () => painted("#3f6b4c", 0.5, 25),
+  darkGlass: () => new THREE.MeshPhysicalMaterial({ color: "#2b3a44", roughness: 0.08, transmission: 0.3, transparent: true, opacity: 0.6 }),
+  castIron: () => cast("#4b4640", 21),
+  castRed: () => cast("#6e3324", 22),
+  steel: () => metal("#c4beb3", 0.3),
+  darkSteel: () => metal("#6f6a62", 0.45),
+  chrome: () => new THREE.MeshStandardMaterial({ color: "#e8e6e1", metalness: 1, roughness: 0.12 }),
+  brass: () => new THREE.MeshStandardMaterial({ map: brushedTexture("#b08a45"), metalness: 0.9, roughness: 0.3 }),
+  copper: () => new THREE.MeshStandardMaterial({ color: "#a3623a", metalness: 0.9, roughness: 0.35 }),
+  rubber: () => new THREE.MeshStandardMaterial({ map: rubberTexture(false), roughness: 0.92, metalness: 0 }),
+  belt: () => new THREE.MeshStandardMaterial({ map: rubberTexture(true), roughness: 0.9, metalness: 0 }),
+  hose: () => new THREE.MeshStandardMaterial({ color: "#1b1917", roughness: 0.6, metalness: 0.1 }),
+  galvanized: () => new THREE.MeshStandardMaterial({ map: galvanizedTexture(), metalness: 0.75, roughness: 0.45 }),
+  cladding: () => new THREE.MeshStandardMaterial({ map: galvanizedTexture(), color: "#e2e4e4", metalness: 0.8, roughness: 0.35 }),
+  checker: () => new THREE.MeshStandardMaterial({ map: checkerTexture(), metalness: 0.8, roughness: 0.45 }),
+  hazard: () => new THREE.MeshStandardMaterial({ map: hazardTexture(), roughness: 0.6, metalness: 0.2 }),
+  louvreYellow: () => new THREE.MeshStandardMaterial({ map: louvreTexture("#c9a23a"), roughness: 0.7, metalness: 0.3 }),
+  louvreGrey: () => new THREE.MeshStandardMaterial({ map: louvreTexture("#6c675f"), roughness: 0.7, metalness: 0.3 }),
+  black: () => new THREE.MeshStandardMaterial({ color: "#1d1a17", roughness: 0.6, metalness: 0.3 }),
+  gaugeFace: () => new THREE.MeshStandardMaterial({ color: "#f3efe6", roughness: 0.4 }),
+  glass: () => new THREE.MeshPhysicalMaterial({ color: "#dfe9ec", roughness: 0.05, transmission: 0.7, transparent: true, opacity: 0.4 }),
+  red: () => new THREE.MeshStandardMaterial({ color: "#b3261e", roughness: 0.45, metalness: 0.1 }),
+  green: () => new THREE.MeshStandardMaterial({ color: "#2f7d3a", roughness: 0.45, metalness: 0.1 }),
+  amber: () => new THREE.MeshStandardMaterial({ color: "#e0a526", roughness: 0.4, emissive: new THREE.Color("#5a3a00"), emissiveIntensity: 0.4 }),
+  screen: () => new THREE.MeshStandardMaterial({ color: "#123129", roughness: 0.2, emissive: new THREE.Color("#2d8c6a"), emissiveIntensity: 0.5 }),
+  oil: () => new THREE.MeshStandardMaterial({ color: "#7a5a1e", roughness: 0.2, metalness: 0.2, transparent: true, opacity: 0.85 }),
+  cardboard: () => new THREE.MeshStandardMaterial({ color: "#a98457", roughness: 0.95 }),
+  grout: () => new THREE.MeshStandardMaterial({ color: "#9b9488", roughness: 1 }),
+  needle: () => new THREE.MeshStandardMaterial({ color: "#b23a2e", roughness: 0.5 }),
+};
 
-function build() {
-  return {
-    motorBlue: painted("#55687a", 0.45, 2),
-    pumpBlue: painted("#2f4f6e", 0.55, 4),
-    machineGreen: painted("#5b6b55", 0.5, 6), // classic lathe / machine-tool green
-    gensetYellow: painted("#c9a23a", 0.4, 8),
-    pressBlue: painted("#3d5c80", 0.35, 9),
-    safetyOrange: painted("#c8642b", 0.5, 10),
-    boilerRed: painted("#8f3b2a", 0.5, 11),
-    cream: painted("#d8ccb2", 0.45, 12, 0.2),
-    frameOchre: painted("#b98a2e", 0.55, 13),
-    darkPaint: painted("#3b3732", 0.5, 14),
-    panelGrey: painted("#a7a196", 0.35, 15, 0.2),
-    toolWhite: painted("#d6dadd", 0.3, 16, 0.2), // machine-tool enclosure
-    toolGrey: painted("#59636c", 0.35, 17),
-    robotOrange: painted("#d9731c", 0.3, 18),
-    forkYellow: painted("#d8a51c", 0.5, 19),
-    panelRal: painted("#c9ccc4", 0.25, 20, 0.2), // RAL 7035 control panels
-    trafoGrey: painted("#7a8691", 0.45, 23),
-    towerBlue: painted("#6f8ea3", 0.4, 24, 0.1),
-    greenPaint: painted("#3f6b4c", 0.5, 25),
-    darkGlass: new THREE.MeshPhysicalMaterial({ color: "#2b3a44", roughness: 0.08, transmission: 0.3, transparent: true, opacity: 0.6 }),
-    castIron: cast("#4b4640", 21),
-    castRed: cast("#6e3324", 22),
-    steel: metal("#c4beb3", 0.3),
-    darkSteel: metal("#6f6a62", 0.45),
-    chrome: new THREE.MeshStandardMaterial({ color: "#e8e6e1", metalness: 1, roughness: 0.12 }),
-    brass: new THREE.MeshStandardMaterial({ map: brushedTexture("#b08a45"), metalness: 0.9, roughness: 0.3 }),
-    copper: new THREE.MeshStandardMaterial({ color: "#a3623a", metalness: 0.9, roughness: 0.35 }),
-    rubber: new THREE.MeshStandardMaterial({ map: rubberTexture(false), roughness: 0.92, metalness: 0 }),
-    belt: new THREE.MeshStandardMaterial({ map: rubberTexture(true), roughness: 0.9, metalness: 0 }),
-    hose: new THREE.MeshStandardMaterial({ color: "#1b1917", roughness: 0.6, metalness: 0.1 }),
-    galvanized: new THREE.MeshStandardMaterial({ map: galvanizedTexture(), metalness: 0.75, roughness: 0.45 }),
-    cladding: new THREE.MeshStandardMaterial({ map: galvanizedTexture(), color: "#e2e4e4", metalness: 0.8, roughness: 0.35 }),
-    checker: new THREE.MeshStandardMaterial({ map: checkerTexture(), metalness: 0.8, roughness: 0.45 }),
-    hazard: new THREE.MeshStandardMaterial({ map: hazardTexture(), roughness: 0.6, metalness: 0.2 }),
-    louvreYellow: new THREE.MeshStandardMaterial({ map: louvreTexture("#c9a23a"), roughness: 0.7, metalness: 0.3 }),
-    louvreGrey: new THREE.MeshStandardMaterial({ map: louvreTexture("#6c675f"), roughness: 0.7, metalness: 0.3 }),
-    black: new THREE.MeshStandardMaterial({ color: "#1d1a17", roughness: 0.6, metalness: 0.3 }),
-    gaugeFace: new THREE.MeshStandardMaterial({ color: "#f3efe6", roughness: 0.4 }),
-    glass: new THREE.MeshPhysicalMaterial({ color: "#dfe9ec", roughness: 0.05, transmission: 0.7, transparent: true, opacity: 0.4 }),
-    red: new THREE.MeshStandardMaterial({ color: "#b3261e", roughness: 0.45, metalness: 0.1 }),
-    green: new THREE.MeshStandardMaterial({ color: "#2f7d3a", roughness: 0.45, metalness: 0.1 }),
-    amber: new THREE.MeshStandardMaterial({ color: "#e0a526", roughness: 0.4, emissive: new THREE.Color("#5a3a00"), emissiveIntensity: 0.4 }),
-    screen: new THREE.MeshStandardMaterial({ color: "#123129", roughness: 0.2, emissive: new THREE.Color("#2d8c6a"), emissiveIntensity: 0.5 }),
-    oil: new THREE.MeshStandardMaterial({ color: "#7a5a1e", roughness: 0.2, metalness: 0.2, transparent: true, opacity: 0.85 }),
-    cardboard: new THREE.MeshStandardMaterial({ color: "#a98457", roughness: 0.95 }),
-    grout: new THREE.MeshStandardMaterial({ color: "#9b9488", roughness: 1 }),
-    needle: new THREE.MeshStandardMaterial({ color: "#b23a2e", roughness: 0.5 }),
-  };
+type Materials = { [K in keyof typeof FACTORIES]: ReturnType<(typeof FACTORIES)[K]> };
+let made: Materials | null = null;
+
+function build(): Materials {
+  const cache: Partial<Materials> = {};
+  const lazy = {} as Materials;
+  for (const key of Object.keys(FACTORIES) as (keyof Materials)[]) {
+    Object.defineProperty(lazy, key, {
+      enumerable: true,
+      get: () => (cache[key] ??= FACTORIES[key]() as never),
+    });
+  }
+  return lazy;
 }
 
 /** Textured materials, built on first use (textures need the browser canvas). */

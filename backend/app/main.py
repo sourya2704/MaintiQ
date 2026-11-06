@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -88,6 +89,8 @@ def create_app() -> FastAPI:
         CORSMiddleware, allow_origins=s.cors_origins, allow_credentials=True,
         allow_methods=["*"], allow_headers=["*"], expose_headers=["Content-Disposition", "X-Request-ID"],
     )
+    # Compress text responses (the built JavaScript shrinks to about a third).
+    app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
     install_error_handlers(app)
 
     @app.middleware("http")
@@ -124,11 +127,21 @@ def create_app() -> FastAPI:
     return app
 
 
+class HashedAssets(StaticFiles):
+    """Vite puts a content hash in every asset file name, so browsers may keep them for a year."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
 def mount_frontend(app: FastAPI, static_dir: Path) -> None:
     """Serve the built single-page app; unknown non-API paths fall back to index.html for client routing."""
     root = static_dir.resolve()
     if (root / "assets").is_dir():
-        app.mount("/assets", StaticFiles(directory=root / "assets"), name="assets")
+        app.mount("/assets", HashedAssets(directory=root / "assets"), name="assets")
 
     @app.get("/{path:path}", include_in_schema=False)
     def spa(path: str):
