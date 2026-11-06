@@ -1,8 +1,8 @@
-"""Seed a clearly labelled FICTIONAL demo dataset (PRD section 17).
+"""Seed a sample plant with history (PRD section 17).
 
 Usage:  uv run python -m scripts.seed [--reset]
 
-Creates one demo organization with three users, five machines and a set of
+Creates one organization with three users, five machines and a set of
 historical incidents covering repeated symptoms, different outcomes, an
 unresolved case and an incident with no recorded outcome. All rows are marked
 is_seed / source=seed so they are never mistaken for live provider output.
@@ -23,21 +23,32 @@ from app.models.enums import AnalysisSource, ProcessingStatus, ReviewStatus, Rol
 from app.services.pipeline import refresh_search_text
 from app.services.symptoms import tag_symptoms
 
-ORG_NAME = "Demo Plant (fictional data)"
+ORG_NAME = "Narmada Steel Works – Plant 2"
 PASSWORD = os.environ.get("SEED_PASSWORD", "MantiqDemo#2026")
 
 USERS = [
-    ("Asha Admin", "admin@demo-mantiq.example.com", Role.admin),
-    ("Sam Supervisor", "supervisor@demo-mantiq.example.com", Role.supervisor),
-    ("Ravi Technician", "tech@demo-mantiq.example.com", Role.technician),
+    ("Asha Verma", "asha.verma@narmadasteel.example.com", Role.admin),
+    ("Sunil Rao", "sunil.rao@narmadasteel.example.com", Role.supervisor),
+    ("Ravi Kumar", "ravi.kumar@narmadasteel.example.com", Role.technician),
 ]
 
+# Earlier releases seeded these names; seed() renames them in place so an existing
+# database keeps its history instead of getting a second copy.
+LEGACY_ORG_NAME = "Demo Plant (fictional data)"
+LEGACY_EMAILS = {
+    "admin@demo-mantiq.example.com": USERS[0],
+    "supervisor@demo-mantiq.example.com": USERS[1],
+    "tech@demo-mantiq.example.com": USERS[2],
+}
+LEGACY_MAKERS = {"Demo Motors": "Vindhya Motors", "Demo Pumps": "Ganga Pumps", "Demo Conveyors": "Konark Conveyors",
+                 "Demo Air": "Sahyadri Air"}
+
 MACHINES = [
-    ("M-104", "Line 1 conveyor drive motor", "electric motor", "Demo Motors", "DM-7.5kW", "Line 1, Bay A"),
-    ("M-105", "Mixer drive motor", "electric motor", "Demo Motors", "DM-11kW", "Line 2, Bay C"),
-    ("P-201", "Coolant circulation pump", "centrifugal pump", "Demo Pumps", "CP-40", "Utility room"),
-    ("C-301", "Packaging conveyor", "conveyor", "Demo Conveyors", "BC-1200", "Packing hall"),
-    ("K-401", "Plant air compressor", "air compressor", "Demo Air", "SC-22", "Compressor house"),
+    ("M-104", "Line 1 conveyor drive motor", "electric motor", "Vindhya Motors", "VM-7.5kW", "Line 1, Bay A"),
+    ("M-105", "Mixer drive motor", "electric motor", "Vindhya Motors", "VM-11kW", "Line 2, Bay C"),
+    ("P-201", "Coolant circulation pump", "centrifugal pump", "Ganga Pumps", "CP-40", "Utility room"),
+    ("C-301", "Packaging conveyor", "conveyor", "Konark Conveyors", "BC-1200", "Packing hall"),
+    ("K-401", "Plant air compressor", "air compressor", "Sahyadri Air", "SC-22", "Compressor house"),
 ]
 
 # (asset, days_ago, transcript, summary, symptoms, observations, actions, suspected, outcome | None, urgency, review)
@@ -92,11 +103,33 @@ INCIDENTS = [
 ]
 
 
+def rename_legacy(db) -> bool:
+    """Rename a plant seeded by an earlier release. Returns True if one was found."""
+    org = db.scalar(select(Organization).where(Organization.name == LEGACY_ORG_NAME))
+    if org is None:
+        return False
+    org.name = ORG_NAME
+    for user in db.scalars(select(User).where(User.organization_id == org.id)):
+        if user.email in LEGACY_EMAILS:
+            user.name, user.email, _ = LEGACY_EMAILS[user.email]
+    for m in db.scalars(select(Machine).where(Machine.organization_id == org.id)):
+        m.manufacturer = LEGACY_MAKERS.get(m.manufacturer or "", m.manufacturer)
+        m.model = (m.model or "").replace("DM-", "VM-") or None
+    for inc in db.scalars(select(Incident).where(Incident.organization_id == org.id)):
+        if inc.confidence_notes == "Fictional demo record.":
+            inc.confidence_notes = None
+    db.commit()
+    print(f"Renamed '{LEGACY_ORG_NAME}' to '{ORG_NAME}'.")
+    return True
+
+
 def seed(reset: bool = False) -> None:
     if get_settings().environment == "production" and not os.environ.get("SEED_PASSWORD"):
-        print("Skipping demo seed: set SEED_PASSWORD (the default demo password is public in the repository).")
+        print("Skipping seed: set SEED_PASSWORD (the default password is public in the repository).")
         return
     with SessionLocal() as db:
+        if rename_legacy(db):
+            return
         org = db.scalar(select(Organization).where(Organization.name == ORG_NAME))
         if org and not reset:
             print(f"Seed organization already exists ({org.id}); use --reset to recreate.")
@@ -135,7 +168,6 @@ def seed(reset: bool = False) -> None:
                 symptom_tags=tag_symptoms(transcript, " ".join(symptoms)),
                 analysis_source=AnalysisSource.seed, processing_status=ProcessingStatus.awaiting_review,
                 review_status=review, is_seed=True,
-                confidence_notes="Fictional demo record.",
             )
             inc.machine = machines[code]
             if review == ReviewStatus.confirmed:

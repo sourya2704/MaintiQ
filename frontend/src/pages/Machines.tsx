@@ -8,7 +8,7 @@ import { useAuth } from "../lib/auth";
 import { PageHeader } from "../components/layout/AppShell";
 import { MachineForm, type MachineInput } from "../components/MachineForm";
 import { Button3D } from "../components/ui/Button3D";
-import { EmptyState, ErrorBox, Input, Panel, Pill, Select, Skeleton, StatusPill, useToast } from "../components/ui/kit";
+import { EmptyState, ErrorBox, Input, Panel, Select, Skeleton, StatusPill, useToast } from "../components/ui/kit";
 import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { machineStatusTone, timeAgo } from "../lib/format";
@@ -142,7 +142,6 @@ export default function Machines() {
                   </span>
                   <span>{m.last_incident_at ? timeAgo(m.last_incident_at) : t("no history")}</span>
                 </div>
-                {m.is_seed && <Pill tone="mute" className="self-start">demo data</Pill>}
               </div>
             </Card>
           ))}

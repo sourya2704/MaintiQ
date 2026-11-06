@@ -3,17 +3,42 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, Query, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    Header,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import DB, CurrentUser, get_incident_for_user, get_machine_for_user, require_roles
+from app.api.deps import (
+    DB,
+    CurrentUser,
+    get_incident_for_user,
+    get_machine_for_user,
+    require_roles,
+)
 from app.core.config import get_settings
 from app.core.errors import AppError, conflict, forbidden, not_found
 from app.db.base import utcnow
-from app.models import AIProcessingJob, AudioAsset, AuditEvent, Incident, MaintenanceOutcome, User
+from app.models import (
+    AIProcessingJob,
+    AudioAsset,
+    AuditEvent,
+    Incident,
+    IncidentPhoto,
+    MaintenanceOutcome,
+    User,
+)
 from app.models.enums import (
     AnalysisSource,
     JobStatus,
@@ -35,6 +60,7 @@ from app.schemas.incidents import (
     JobOut,
     OutcomeIn,
     OutcomeOut,
+    PhotoOut,
     ProcessingAccepted,
     RelatedResponse,
 )
@@ -50,13 +76,13 @@ TRANSCRIPT_LABELS = {
     TranscriptSource.prisma: "Transcribed by Gnani Prisma (live)",
     TranscriptSource.prisma_mock: "Prisma MOCK fixture (not a live provider call)",
     TranscriptSource.manual: "Entered manually",
-    TranscriptSource.seed: "Fictional demo data",
+    TranscriptSource.seed: "Imported from plant records",
 }
 ANALYSIS_LABELS = {
     AnalysisSource.evon: "AI-suggested by Gnani Evon (live), unreviewed",
     AnalysisSource.evon_mock: "AI-suggested by Evon MOCK (rule-based, no model call), unreviewed",
     AnalysisSource.manual: "Entered manually, unreviewed",
-    AnalysisSource.seed: "Fictional demo data",
+    AnalysisSource.seed: "Imported from plant records",
 }
 
 
@@ -426,6 +452,61 @@ def delete_audio(incident_id: uuid.UUID, audio_id: uuid.UUID, db: DB, user: Curr
     db.commit()
 
 
+# --------------------------------------------------------------------------- photos
+
+
+@router.post("/{incident_id}/photos", response_model=list[PhotoOut], status_code=status.HTTP_201_CREATED)
+async def add_photos(incident_id: uuid.UUID, db: DB, user: CurrentUser, files: Annotated[list[UploadFile], File()]):
+    """Attach photos of the fault (phone camera or gallery). JPEG, PNG or WebP."""
+    inc = _load(db, user, incident_id, lock=True)
+    settings = get_settings()
+    if len(inc.photos) + len(files) > settings.max_photos_per_incident:
+        raise conflict("too_many_photos", f"An incident can have at most {settings.max_photos_per_incident} photos")
+    saved: list[str] = []
+    try:
+        for f in files:
+            key, mime, size = storage.save_photo(user.organization_id, await f.read(settings.max_photo_bytes + 1))
+            saved.append(key)
+            inc.photos.append(IncidentPhoto(storage_key=key, mime_type=mime, size_bytes=size, uploaded_by_id=user.id))
+    except AppError:
+        for key in saved:
+            storage.delete_file(key)
+        raise
+    audit.record(db, organization_id=inc.organization_id, actor_id=user.id, entity_type="incident",
+                 entity_id=inc.id, action="photos_added", details={"count": len(files)})
+    db.commit()
+    return inc.photos
+
+
+def _photo(inc: Incident, photo_id: uuid.UUID) -> IncidentPhoto:
+    photo = next((p for p in inc.photos if p.id == photo_id), None)
+    if photo is None:
+        raise not_found("Photo")
+    return photo
+
+
+@router.get("/{incident_id}/photos/{photo_id}")
+def get_photo(incident_id: uuid.UUID, photo_id: uuid.UUID, db: DB, user: CurrentUser):
+    photo = _photo(_load(db, user, incident_id), photo_id)
+    path = storage.resolve(photo.storage_key)
+    if not path.exists():
+        raise AppError(410, "photo_missing", "The photo file is no longer available")
+    return FileResponse(path, media_type=photo.mime_type, headers={"Cache-Control": "private, max-age=86400"})
+
+
+@router.delete("/{incident_id}/photos/{photo_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_photo(incident_id: uuid.UUID, photo_id: uuid.UUID, db: DB, user: CurrentUser):
+    inc = _load(db, user, incident_id, lock=True)
+    photo = _photo(inc, photo_id)
+    if user.role == Role.technician and photo.uploaded_by_id != user.id:
+        raise forbidden("Only the person who took this photo or a supervisor can delete it")
+    storage.delete_file(photo.storage_key)
+    inc.photos.remove(photo)
+    audit.record(db, organization_id=inc.organization_id, actor_id=user.id, entity_type="incident",
+                 entity_id=inc.id, action="photo_deleted", details={"photo_id": str(photo_id)})
+    db.commit()
+
+
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_incident(incident_id: uuid.UUID, db: DB, user: Lead, confirm: bool = Query(default=False)):
     inc = _load(db, user, incident_id, lock=True)
@@ -433,6 +514,8 @@ def delete_incident(incident_id: uuid.UUID, db: DB, user: Lead, confirm: bool = 
         raise conflict("confirmation_required", "Pass confirm=true to permanently delete this incident")
     for asset in inc.audio_assets:
         storage.delete_file(asset.storage_key)
+    for photo in inc.photos:
+        storage.delete_file(photo.storage_key)
     audit.record(db, organization_id=inc.organization_id, actor_id=user.id, entity_type="incident",
                  entity_id=inc.id, action="incident_deleted", details={"machine_id": str(inc.machine_id)})
     db.delete(inc)

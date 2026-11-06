@@ -8,6 +8,7 @@ import { useLanguage } from "./lib/i18n";
 const Login = lazy(() => import("./pages/Login"));
 const ChooseLanguage = lazy(() => import("./pages/ChooseLanguage"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MechanicHome = lazy(() => import("./pages/MechanicHome"));
 const Machines = lazy(() => import("./pages/Machines"));
 const MachineDetail = lazy(() => import("./pages/MachineDetail"));
 const NewIncident = lazy(() => import("./pages/NewIncident"));
@@ -29,6 +30,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 export default function App() {
   const { user } = useAuth();
+  const mechanic = user?.role === "technician";
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
@@ -40,7 +42,7 @@ export default function App() {
             </RequireAuth>
           }
         >
-          <Route index element={<Dashboard />} />
+          <Route index element={mechanic ? <MechanicHome /> : <Dashboard />} />
           <Route path="machines" element={<Machines />} />
           <Route path="machines/:id" element={<MachineDetail />} />
           <Route path="report" element={<NewIncident />} />

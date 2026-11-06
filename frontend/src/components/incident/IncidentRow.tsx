@@ -3,7 +3,7 @@ import { processingTone, resolutionTone, timeAgo, urgencyTone } from "../../lib/
 import { t } from "../../lib/i18n";
 import type { IncidentListItem } from "../../lib/types";
 import { ChevronRight, MachineTypeIcon } from "../icons/MachineIcons";
-import { Pill, StatusPill, SymptomChip } from "../ui/kit";
+import { StatusPill, SymptomChip } from "../ui/kit";
 
 export function IncidentRow({ inc, compact }: { inc: IncidentListItem; index?: number; compact?: boolean }) {
   return (
@@ -25,7 +25,6 @@ export function IncidentRow({ inc, compact }: { inc: IncidentListItem; index?: n
               {inc.symptom_tags.slice(0, 4).map((t) => (
                 <SymptomChip key={t} tag={t} />
               ))}
-              {inc.is_seed && <Pill tone="mute">demo data</Pill>}
             </div>
           )}
         </div>

@@ -147,6 +147,9 @@ class Incident(UUIDPk, Timestamps, Base):
     audio_assets: Mapped[list["AudioAsset"]] = relationship(
         back_populates="incident", cascade="all, delete-orphan"
     )
+    photos: Mapped[list["IncidentPhoto"]] = relationship(
+        back_populates="incident", cascade="all, delete-orphan", order_by="IncidentPhoto.created_at"
+    )
     jobs: Mapped[list["AIProcessingJob"]] = relationship(
         back_populates="incident", cascade="all, delete-orphan", order_by="AIProcessingJob.started_at"
     )
@@ -193,6 +196,23 @@ class AudioAsset(UUIDPk, Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     incident: Mapped[Incident] = relationship(back_populates="audio_assets")
+
+
+class IncidentPhoto(UUIDPk, Base):
+    """A photo of the fault taken by the reporter (e.g. from a phone camera)."""
+
+    __tablename__ = "incident_photos"
+
+    incident_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("incidents.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    storage_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    uploaded_by_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    incident: Mapped[Incident] = relationship(back_populates="photos")
 
 
 class AIProcessingJob(UUIDPk, Base):

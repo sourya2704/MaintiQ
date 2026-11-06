@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     max_audio_bytes: int = 10 * 1024 * 1024
     max_audio_seconds: float = 120.0  # longer notes are split into Prisma-sized chunks
     audio_retention_days: int = 30
+    max_photo_bytes: int = 8 * 1024 * 1024
+    max_photos_per_incident: int = 8
     retention_interval_minutes: int = 60  # 0 disables the in-process retention sweep
 
     # Gnani Prisma (speech-to-text) - https://docs.gnani.ai

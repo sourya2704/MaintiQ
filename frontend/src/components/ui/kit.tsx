@@ -14,38 +14,38 @@ import { t, tNode } from "../../lib/i18n";
 import { CheckIcon, GearsIcon, IncidentIcon, SymptomIcon, XIcon } from "../icons/MachineIcons";
 import { Button3D } from "./Button3D";
 
+// Solid tinted labels: readable at a glance, no outline or status dot.
 const toneClasses: Record<Tone, string> = {
-  ok: "text-ok border-ok/35 bg-ok/10",
-  warn: "text-warn border-warn/40 bg-warn/10",
-  alert: "text-alert border-alert/35 bg-alert/10",
-  brass: "text-brass border-brass/35 bg-brass/10",
-  rust: "text-rust border-rust/35 bg-rust/10",
-  mute: "text-ink-mute border-line bg-sunk",
-  taupe: "text-taupe border-taupe/35 bg-taupe/10",
+  ok: "text-[#4a6129] bg-ok/15",
+  warn: "text-[#8a5a12] bg-warn/15",
+  alert: "text-alert bg-alert/12",
+  brass: "text-brass-deep bg-brass/12",
+  rust: "text-rust-deep bg-rust/12",
+  mute: "text-ink-dim bg-ink/[0.06]",
+  taupe: "text-taupe bg-taupe/12",
 };
 
-export function Pill({ tone = "mute", children, dot, className = "" }: { tone?: Tone; children: ReactNode; dot?: boolean; className?: string }) {
+export function Pill({ tone = "mute", children, className = "" }: { tone?: Tone; children: ReactNode; dot?: boolean; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${toneClasses[tone]} ${className}`}>
-      {dot && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
-      {tNode(children)}
+    <span className={`inline-flex items-center whitespace-nowrap rounded-[5px] px-2 py-[3px] text-xs font-semibold leading-none ${toneClasses[tone]} ${className}`}>
+      {typeof children === "string" ? sentence(t(children)) : children}
     </span>
   );
 }
 
+function sentence(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function StatusPill({ value, tones }: { value: string; tones: Record<string, Tone> }) {
-  return (
-    <Pill tone={tones[value] ?? "mute"} dot>
-      {t(humanize(value))}
-    </Pill>
-  );
+  return <Pill tone={tones[value] ?? "mute"}>{sentence(t(humanize(value)))}</Pill>;
 }
 
 export function SymptomChip({ tag }: { tag: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-sunk px-2 py-1 text-xs text-ink-dim">
+    <span className="inline-flex items-center gap-1.5 rounded-[5px] bg-ink/[0.05] px-2 py-1 text-xs font-medium text-ink-dim">
       <SymptomIcon tag={tag} size={14} className="text-rust" />
-      {t(humanize(tag))}
+      {sentence(t(humanize(tag)))}
     </span>
   );
 }
@@ -71,7 +71,7 @@ export function Panel({
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3">
           <div className="group flex flex-wrap items-center gap-2.5">
             {icon && <span className="text-rust">{icon}</span>}
-            <h2 className="font-display text-base font-bold uppercase tracking-wide text-ink">{tNode(title)}</h2>
+            <h2 className="font-display text-lg font-semibold text-ink">{tNode(title)}</h2>
             {tag}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -88,7 +88,7 @@ const fieldBase =
 export function Field({ label, hint, error, children }: { label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-ink-dim">{tNode(label)}</span>
+      <span className="text-[13px] font-semibold text-ink-dim">{tNode(label)}</span>
       {children}
       {error ? <span className="block text-xs text-alert">{t(error)}</span> : hint ? <span className="block text-xs text-ink-mute">{tNode(hint)}</span> : null}
     </label>
@@ -105,7 +105,7 @@ export function EmptyState({ title, body, action, icon }: { title: string; body?
   return (
     <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-10 text-center">
       <div className="text-ink-mute">{icon ?? <GearsIcon size={36} />}</div>
-      <p className="font-display text-base font-bold uppercase tracking-wide text-ink-dim">{t(title)}</p>
+      <p className="font-display text-lg font-semibold text-ink-dim">{t(title)}</p>
       {body && <p className="max-w-md text-sm text-ink-mute">{t(body)}</p>}
       {action}
     </div>
@@ -135,7 +135,7 @@ export function Stat({ label, value, sub, tone = "brass" }: { label: string; val
   const color = { brass: "text-brass", rust: "text-rust", alert: "text-alert", ok: "text-ok", warn: "text-warn" }[tone];
   return (
     <div>
-      <div className="text-xs font-semibold uppercase tracking-wide text-ink-mute">{t(label)}</div>
+      <div className="text-[13px] font-medium text-ink-mute">{t(label)}</div>
       <div className={`mt-1 font-display text-4xl font-bold ${color}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-ink-mute">{sub}</div>}
     </div>
@@ -185,7 +185,7 @@ export function ConfirmDialog({
           >
             {danger && <div className="hazard-stripe h-1.5" />}
             <div className="space-y-2 p-6">
-              <h3 className="font-display text-lg font-bold uppercase tracking-wide">{t(title)}</h3>
+              <h3 className="font-display text-xl font-semibold">{t(title)}</h3>
               <div className="text-sm text-ink-dim">{tNode(body)}</div>
             </div>
             <div className="flex justify-end gap-3 border-t border-line bg-sunk/50 px-6 py-4">
@@ -218,7 +218,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div aria-live="polite" className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2">
+      <div aria-live="polite" className="pointer-events-none fixed bottom-24 right-4 z-[60] lg:bottom-4 flex w-[min(380px,calc(100vw-2rem))] flex-col gap-2">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div

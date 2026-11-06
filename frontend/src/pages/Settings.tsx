@@ -43,7 +43,7 @@ function Integrations() {
                 <div className="flex items-center justify-between">
                   <div className="group flex items-center gap-2">
                     <Icon size={22} className="text-brass" />
-                    <span className="font-display text-sm font-bold uppercase tracking-wide">{p.provider}</span>
+                    <span className="font-display text-sm font-bold">{p.provider}</span>
                   </div>
                   <Pill tone={live ? "ok" : p.mode === "disabled" ? "mute" : "warn"} dot>{p.mode}</Pill>
                 </div>
@@ -75,15 +75,15 @@ function Integrations() {
       <Panel title="Audio & privacy" icon={<ShieldIcon size={18} />}>
         <div className="grid gap-4 text-sm sm:grid-cols-3">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-ink-mute">{t("Max recording")}</div>
+            <div className="text-[11px] text-ink-mute">{t("Max recording")}</div>
             <div className="font-mono">{data.audio.max_seconds}s · {fileSize(data.audio.max_bytes)}</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-ink-mute">{t("Audio retention")}</div>
+            <div className="text-[11px] text-ink-mute">{t("Audio retention")}</div>
             <div className="font-mono">{t("{n} days", { n: data.audio.retention_days })}</div>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-ink-mute">{t("Formats")}</div>
+            <div className="text-[11px] text-ink-mute">{t("Formats")}</div>
             <div className="font-mono text-xs">{data.audio.accepted_formats.join(" · ")}</div>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function Settings() {
     <div className="space-y-6">
       <PageHeader kicker="Configuration" title="Settings" icon={<GearIcon size={28} />} />
       <Language />
-      <Integrations />
+      {can("admin", "supervisor") && <Integrations />}
       {can("admin", "supervisor") && <Users />}
       <Password />
     </div>

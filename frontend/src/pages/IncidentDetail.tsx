@@ -6,6 +6,7 @@ import { Loader } from "../components/ui/Loader";
 import {
   ArrowLeft,
   BearingIcon,
+  CameraIcon,
   CheckIcon,
   ClockIcon,
   DownloadIcon,
@@ -23,6 +24,7 @@ import {
   WrenchIcon,
 } from "../components/icons/MachineIcons";
 import { GuidePanel } from "../components/incident/GuidePanel";
+import { PhotoButtons, PhotoGallery, uploadPhotos } from "../components/incident/Photos";
 import { AudioPlayer, ListBlock, OutcomeForm, PipelineStepper, RelatedList } from "../components/incident/parts";
 import { Button3D } from "../components/ui/Button3D";
 import { ConfirmDialog, ErrorBox, Panel, Pill, Select, StatusPill, SymptomChip, Textarea, errorText, useToast } from "../components/ui/kit";
@@ -118,6 +120,19 @@ export default function IncidentDetail() {
     },
     onError: onErr,
   });
+  const addPhotos = useMutation({
+    mutationFn: (files: File[]) => uploadPhotos(id, files),
+    onSuccess: () => {
+      refresh();
+      toast("ok", "Photos added");
+    },
+    onError: onErr,
+  });
+  const removePhoto = useMutation({
+    mutationFn: (photoId: string) => api.del(`/api/incidents/${id}/photos/${photoId}`),
+    onSuccess: () => refresh(),
+    onError: onErr,
+  });
   const outcome = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.post(`/api/incidents/${id}/outcome`, body),
     onSuccess: () => {
@@ -209,7 +224,6 @@ export default function IncidentDetail() {
             </Pill>
             <StatusPill value={inc.resolution_status} tones={resolutionTone} />
             {inc.urgency !== "unknown" && <StatusPill value={inc.urgency} tones={urgencyTone} />}
-            {inc.is_seed && <Pill tone="mute">demo data</Pill>}
           </div>
         </div>
         <div className="relative mt-6">
@@ -250,7 +264,7 @@ export default function IncidentDetail() {
           <Panel
             title="Transcript"
             icon={<WaveIcon size={18} />}
-            tag={<span className="font-mono text-[10px] uppercase tracking-wider text-ink-mute">{(inc.provenance?.transcript ?? "").split("; ").map((part) => t(part)).join("; ")}</span>}
+            tag={<span className="font-mono text-[10px] text-ink-mute">{(inc.provenance?.transcript ?? "").split("; ").map((part) => t(part)).join("; ")}</span>}
             actions={
               transcript &&
               !busy &&
@@ -323,6 +337,15 @@ export default function IncidentDetail() {
             )}
           </Panel>
 
+          <Panel title="Photos" icon={<CameraIcon size={18} />} actions={!locked && inc.photos.length < 8 && <PhotoButtons disabled={addPhotos.isPending} onPick={(f) => addPhotos.mutate(f)} />}>
+            <PhotoGallery
+              incidentId={inc.id}
+              photos={inc.photos}
+              canDelete={() => !locked}
+              onDelete={(p) => removePhoto.mutate(p.id)}
+            />
+          </Panel>
+
           {/* draft */}
           <Panel
             title="Incident draft"
@@ -369,7 +392,7 @@ export default function IncidentDetail() {
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-ink-dim">{t("Summary")}</h3>
+                  <h3 className="mb-2 text-[11px] font-bold text-ink-dim">{t("Summary")}</h3>
                   {editing ? (
                     <Textarea rows={2} value={d.summary ?? ""} onChange={(e) => setD("summary")(e.target.value)} />
                   ) : (
@@ -490,7 +513,7 @@ export default function IncidentDetail() {
               <ul className="space-y-2">
                 {inc.jobs.map((j) => (
                   <li key={j.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-line bg-sunk/70 px-3 py-2 text-xs">
-                    <span className="font-mono font-bold uppercase text-ink">{j.provider}</span>
+                    <span className="font-mono font-bold text-ink">{j.provider}</span>
                     <Pill tone={j.mode === "live" ? "ok" : "warn"}>{j.mode}</Pill>
                     <Pill tone={j.status === "succeeded" ? "ok" : j.status === "failed" ? "alert" : "brass"}>{j.status}</Pill>
                     <span className="font-mono text-ink-mute">{j.model}</span>

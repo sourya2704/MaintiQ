@@ -54,7 +54,7 @@ export default function MachineDetail() {
           <Suspense fallback={<Loader label="Rendering model" />}>
             <MachineViewer className="absolute inset-0" kind={machineKind(m.type)} status={m.status} symptoms={[...openTags]} />
           </Suspense>
-          <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] uppercase tracking-wider text-ink-mute">
+          <div className="pointer-events-none absolute left-4 top-4 font-mono text-[10px] text-ink-mute">
             {t("Drag to orbit · scroll to turn")}
           </div>
           {openTags.size > 0 && (
@@ -77,7 +77,7 @@ export default function MachineDetail() {
                 </div>
                 <div>
                   <div className="font-mono text-lg font-bold text-rust">{m.asset_code}</div>
-                  <h1 className="font-display text-xl font-bold uppercase tracking-wide">{m.name}</h1>
+                  <h1 className="font-display text-xl font-bold">{m.name}</h1>
                 </div>
               </div>
               <StatusPill value={m.status} tones={machineStatusTone} />
@@ -90,18 +90,18 @@ export default function MachineDetail() {
                 ["Model", m.model],
               ].map(([k, v]) => (
                 <div key={k}>
-                  <dt className="text-[11px] uppercase tracking-wider text-ink-mute">{t(k ?? "")}</dt>
+                  <dt className="text-[11px] text-ink-mute">{t(k ?? "")}</dt>
                   <dd className="capitalize text-ink">{v || "—"}</dd>
                 </div>
               ))}
             </dl>
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-line bg-sunk p-3">
-                <div className="text-[11px] uppercase tracking-wider text-ink-mute">{t("Incidents")}</div>
+                <div className="text-[11px] text-ink-mute">{t("Incidents")}</div>
                 <div className="font-display text-2xl font-bold text-brass">{m.incident_count}</div>
               </div>
               <div className="rounded-xl border border-line bg-sunk p-3">
-                <div className="text-[11px] uppercase tracking-wider text-ink-mute">{t("Open")}</div>
+                <div className="text-[11px] text-ink-mute">{t("Open")}</div>
                 <div className={`font-display text-2xl font-bold ${m.open_incident_count ? "text-rust" : "text-ok"}`}>{m.open_incident_count}</div>
               </div>
             </div>
@@ -161,7 +161,6 @@ export default function MachineDetail() {
                     <StatusPill value={e.resolution_status} tones={resolutionTone} />
                     {e.urgency === "urgent" && <StatusPill value="urgent" tones={urgencyTone} />}
                     {e.review_status === "draft" && <Pill tone="warn">unreviewed</Pill>}
-                    {e.is_seed && <Pill tone="mute">demo</Pill>}
                   </div>
                   <div className="mt-1.5 text-sm text-ink group-hover:text-rust-deep">{e.summary ?? t("Awaiting transcript…")}</div>
                   <div className="mt-1 text-xs text-ink-mute">

@@ -155,6 +155,36 @@ def save_audio(organization_id: uuid.UUID, filename: str, content: bytes) -> Sto
     )
 
 
+IMAGE_TYPES = {".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def _sniff_image(head: bytes) -> str | None:
+    if head[:3] == b"\xff\xd8\xff":
+        return ".jpg"
+    if head[:8] == b"\x89PNG\r\n\x1a\n":
+        return ".png"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return ".webp"
+    return None
+
+
+def save_photo(organization_id: uuid.UUID, content: bytes) -> tuple[str, str, int]:
+    """Store a fault photo. The type comes from the file's bytes, never its name. Returns (key, mime, size)."""
+    settings = get_settings()
+    if not content:
+        raise AppError(400, "empty_photo", "The photo is empty")
+    if len(content) > settings.max_photo_bytes:
+        raise AppError(413, "photo_too_large", f"Photos must be under {settings.max_photo_bytes // (1024 * 1024)} MB")
+    ext = _sniff_image(content[:16])
+    if ext is None:
+        raise AppError(415, "unsupported_photo", "Photos must be JPEG, PNG or WebP")
+    folder = storage_root() / "photos" / str(organization_id)
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{uuid.uuid4().hex}{ext}"
+    path.write_bytes(content)
+    return str(path.relative_to(storage_root())), IMAGE_TYPES[ext], len(content)
+
+
 def delete_file(storage_key: str | None) -> None:
     if storage_key:
         resolve(storage_key).unlink(missing_ok=True)

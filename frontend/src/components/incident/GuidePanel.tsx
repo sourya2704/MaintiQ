@@ -74,7 +74,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           </p>
 
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-dim">{t("Likely causes")}</h3>
+            <h3 className="mb-2 text-xs font-bold text-ink-dim">{t("Likely causes")}</h3>
             <ol className="space-y-2">
               {g.likely_causes.map((c) => (
                 <li key={c.cause} className="rounded-lg border border-line bg-sunk/60 p-3">
@@ -108,7 +108,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           </section>
 
           <section>
-            <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-dim">
+            <h3 className="mb-2 text-xs font-bold text-ink-dim">
               {t("Checks, in order")} <span className="font-normal normal-case text-ink-mute">· {t("tick as you go (saved in this browser only)")}</span>
             </h3>
             <ol className="space-y-2">
@@ -136,7 +136,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           <div className="grid gap-4 sm:grid-cols-2">
             {g.parts_to_have.length > 0 && (
               <section>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-dim">{t("Parts to have on hand")}</h3>
+                <h3 className="mb-2 text-xs font-bold text-ink-dim">{t("Parts to have on hand")}</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {g.parts_to_have.map((p) => (
                     <span key={p} className="rounded-md border border-line bg-sunk px-2 py-1 text-xs text-ink-dim">
@@ -148,7 +148,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
             )}
             {g.escalate_if.length > 0 && (
               <section>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-alert">{t("Stop and escalate if")}</h3>
+                <h3 className="mb-2 text-xs font-bold text-alert">{t("Stop and escalate if")}</h3>
                 <ul className="space-y-1 text-sm text-ink-dim">
                   {g.escalate_if.map((e) => (
                     <li key={e} className="flex gap-2">
@@ -161,7 +161,7 @@ export function GuidePanel({ inc, onGenerate, busy }: { inc: IncidentDetail; onG
           </div>
           {g.do_not.length > 0 && (
             <section>
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-dim">{t("Do not")}</h3>
+              <h3 className="mb-2 text-xs font-bold text-ink-dim">{t("Do not")}</h3>
               <ul className="space-y-1 text-sm text-ink-dim">
                 {g.do_not.map((d) => (
                   <li key={d} className="flex gap-2">

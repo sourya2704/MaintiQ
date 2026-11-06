@@ -33,7 +33,7 @@ export default function ChooseLanguage() {
     <BilingualLoop>
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
         <Logo />
-        <h1 className="mt-10 min-h-[1.3em] text-center font-display text-4xl font-bold uppercase leading-snug tracking-wide">
+        <h1 className="mt-10 min-h-[1.3em] text-center font-display text-4xl font-bold leading-snug tracking-wide">
           <Say>Choose your language</Say>
         </h1>
         <p className="mt-2 min-h-[1.5em] max-w-md text-center text-ink-dim">
