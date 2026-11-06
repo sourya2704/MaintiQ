@@ -3,8 +3,10 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
 import { Loader } from "./components/ui/Loader";
 import { useAuth } from "./lib/auth";
+import { useLanguage } from "./lib/i18n";
 
 const Login = lazy(() => import("./pages/Login"));
+const ChooseLanguage = lazy(() => import("./pages/ChooseLanguage"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Machines = lazy(() => import("./pages/Machines"));
 const MachineDetail = lazy(() => import("./pages/MachineDetail"));
@@ -16,9 +18,12 @@ const Settings = lazy(() => import("./pages/Settings"));
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const { chosen } = useLanguage();
   const location = useLocation();
   if (loading) return <Loader label="Authenticating" />;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  // First sign-in after registering: pick English or Hindi before anything else.
+  if (!chosen) return <ChooseLanguage />;
   return children;
 }
 

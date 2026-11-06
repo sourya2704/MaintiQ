@@ -50,6 +50,8 @@ class User(UUIDPk, Base):
     password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(String(20), default=Role.technician, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # UI language ("en" or "hi"); NULL until the user picks one after first sign-in.
+    preferred_language: Mapped[str | None] = mapped_column(String(5))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     organization: Mapped[Organization] = relationship()

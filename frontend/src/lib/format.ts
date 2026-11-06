@@ -1,9 +1,10 @@
+import { dateLocale, t } from "./i18n";
 import type { MachineStatus, ProcessingStatus, ResolutionStatus, Urgency } from "./types";
 
 export function fmtDate(iso: string | null | undefined, withTime = false) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(dateLocale(), {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -14,15 +15,15 @@ export function fmtDate(iso: string | null | undefined, withTime = false) {
 export function timeAgo(iso: string | null | undefined) {
   if (!iso) return "—";
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 60) return "just now";
+  if (s < 60) return t("just now");
   const units: [number, string][] = [
-    [60, "min"],
-    [3600, "h"],
-    [86400, "d"],
-    [2592000, "mo"],
-    [31536000, "y"],
+    [60, "{n}min ago"],
+    [3600, "{n}h ago"],
+    [86400, "{n}d ago"],
+    [2592000, "{n}mo ago"],
+    [31536000, "{n}y ago"],
   ];
-  let label = "min";
+  let label = "{n}min ago";
   let value = s / 60;
   for (let i = units.length - 1; i >= 0; i--) {
     if (s >= units[i][0]) {
@@ -31,7 +32,7 @@ export function timeAgo(iso: string | null | undefined) {
       break;
     }
   }
-  return `${Math.floor(value)}${label} ago`;
+  return t(label, { n: Math.floor(value) });
 }
 
 export const humanize = (s: string) => s.replace(/_/g, " ");

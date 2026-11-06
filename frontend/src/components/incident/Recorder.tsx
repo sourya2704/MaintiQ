@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { t } from "../../lib/i18n";
 import { MicIcon, RefreshIcon, StopIcon } from "../icons/MachineIcons";
 import { Button3D } from "../ui/Button3D";
 
@@ -110,7 +111,7 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
         if (secs >= MAX_SECONDS) stop();
       }, 200);
     } catch {
-      setError("Microphone access was blocked. Allow microphone access, or upload a file instead.");
+      setError(t("Microphone access was blocked. Allow microphone access, or upload a file instead."));
       cleanup();
     }
   };
@@ -150,7 +151,7 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
           type="button"
           disabled={disabled || state === "done"}
           onClick={recording ? stop : start}
-          aria-label={recording ? "Stop recording" : "Start recording"}
+          aria-label={t(recording ? "Stop recording" : "Start recording")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.94, y: 6 }}
           className="group relative h-32 w-32 rounded-full disabled:opacity-40"
@@ -173,11 +174,13 @@ export function Recorder({ onRecorded, disabled }: { onRecorded: (file: File | n
       </div>
       <canvas ref={canvas} className={`h-14 w-full max-w-md ${recording ? "opacity-100" : "opacity-30"}`} aria-hidden />
       <p className="text-center text-xs text-ink-mute">
-        {recording
-          ? "Describe what you see, hear and have already checked. Tap to stop."
-          : state === "done"
-            ? "Recorded. Play it back, then submit, or record again."
-            : "Tap the button and describe the fault: machine, symptoms, what you checked."}
+        {t(
+          recording
+            ? "Describe what you see, hear and have already checked. Tap to stop."
+            : state === "done"
+              ? "Recorded. Play it back, then submit, or record again."
+              : "Tap the button and describe the fault: machine, symptoms, what you checked.",
+        )}
       </p>
       {state === "done" && url && (
         <div className="flex w-full max-w-md items-center gap-3">

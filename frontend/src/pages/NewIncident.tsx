@@ -9,6 +9,7 @@ import { Button3D } from "../components/ui/Button3D";
 import { ErrorBox, Field, Panel, Select, Textarea, useToast } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { fileSize } from "../lib/format";
+import { currentLang, t } from "../lib/i18n";
 import type { IncidentDetail, IntegrationStatus, Machine, Page } from "../lib/types";
 
 type Mode = "record" | "upload" | "type";
@@ -27,7 +28,8 @@ export default function NewIncident() {
   const [mode, setMode] = useState<Mode>("record");
   const [file, setFile] = useState<File | null>(null);
   const [text, setText] = useState("");
-  const [lang, setLang] = useState("en-IN");
+  // Hindi users usually speak Hindi: default the voice-note language to match the interface.
+  const [lang, setLang] = useState(currentLang() === "hi" ? "hi-IN" : "en-IN");
   const [drag, setDrag] = useState(false);
   // One key per draft: a double-submit or network retry returns the same incident.
   const idempotencyKey = useMemo(() => crypto.randomUUID(), [machineId, mode, file, text]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -69,9 +71,9 @@ export default function NewIncident() {
 
       <div className="space-y-6">
         <Panel title="1 · Machine" icon={<MachineTypeIcon type={selected?.type ?? ""} size={18} />}>
-          <Field label="Which machine?" hint={selected ? `${selected.type}${selected.location ? ` · ${selected.location}` : ""}` : undefined}>
+          <Field label="Which machine?" hint={selected ? <>{`${selected.type}${selected.location ? ` · ${selected.location}` : ""}`}</> : undefined}>
             <Select value={machineId} onChange={(e) => setMachineId(e.target.value)} required>
-              <option value="">Select a machine…</option>
+              <option value="">{t("Select a machine…")}</option>
               {machines.data?.items.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.asset_code} — {m.name}
@@ -81,9 +83,9 @@ export default function NewIncident() {
           </Field>
           {machines.data?.items.length === 0 && (
             <p className="mt-3 text-sm text-ink-mute">
-              No machines yet.{" "}
+              {t("No machines yet.")}{" "}
               <button className="text-brass underline" onClick={() => navigate("/machines")}>
-                Add one first
+                {t("Add one first")}
               </button>
               .
             </p>
@@ -95,10 +97,10 @@ export default function NewIncident() {
           icon={<MicIcon size={18} />}
           actions={
             mode !== "type" && (
-              <Select aria-label="Spoken language" value={lang} onChange={(e) => setLang(e.target.value)} className="!h-8 !w-auto !py-0 text-xs">
+              <Select aria-label={t("Spoken language")} value={lang} onChange={(e) => setLang(e.target.value)} className="!h-8 !w-auto !py-0 text-xs">
                 {LANGS.map((l) => (
                   <option key={l.v} value={l.v}>
-                    {l.l}
+                    {t(l.l)}
                   </option>
                 ))}
               </Select>
@@ -119,7 +121,7 @@ export default function NewIncident() {
                   mode === id ? "border-rust/60 bg-rust/10 text-rust" : "border-line text-ink-dim hover:border-line-strong hover:text-ink"
                 }`}
               >
-                <Icon size={17} /> {label}
+                <Icon size={17} /> {t(label)}
               </button>
             ))}
           </div>
@@ -154,11 +156,15 @@ export default function NewIncident() {
                       <div className="text-xs text-ink-mute">{fileSize(file.size)}</div>
                     </div>
                   ) : (
-                    <div className="text-sm text-ink-dim">Drop a recording here or click to choose</div>
+                    <div className="text-sm text-ink-dim">{t("Drop a recording here or click to choose")}</div>
                   )}
                   <div className="text-xs text-ink-mute">
                     {integrations.data
-                      ? `${integrations.data.audio.accepted_formats.join(", ").toUpperCase()} · up to ${integrations.data.audio.max_seconds}s · ${fileSize(integrations.data.audio.max_bytes)}`
+                      ? t("{formats} · up to {seconds}s · {size}", {
+                          formats: integrations.data.audio.accepted_formats.join(", ").toUpperCase(),
+                          seconds: integrations.data.audio.max_seconds,
+                          size: fileSize(integrations.data.audio.max_bytes),
+                        })
                       : "WAV, MP3, OGG, FLAC, AAC, M4A, WEBM"}
                   </div>
                   <input ref={fileInput} type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.aac,.m4a,.webm" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
@@ -166,7 +172,7 @@ export default function NewIncident() {
               )}
               {mode === "type" && (
                 <Field label="Describe the fault" hint="Used when recording isn't possible. Saved as a manual transcript, not a Prisma one.">
-                  <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder="Motor M-104 vibrating more than usual, housing hot. Checked belt tension, fine…" />
+                  <Textarea rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t("Motor M-104 vibrating more than usual, housing hot. Checked belt tension, fine…")} />
                 </Field>
               )}
             </motion.div>
@@ -180,9 +186,11 @@ export default function NewIncident() {
           </Button3D>
           {mode !== "type" && prisma && (
             <p className="text-center text-xs text-ink-mute">
-              {prisma.mode === "live"
-                ? "Audio is transcribed by Gnani Prisma (live). It is sent to Gnani for processing."
-                : "Prisma is in MOCK mode: the transcript will be a labelled local fixture."}
+              {t(
+                prisma.mode === "live"
+                  ? "Audio is transcribed by Gnani Prisma (live). It is sent to Gnani for processing."
+                  : "Prisma is in MOCK mode: the transcript will be a labelled local fixture.",
+              )}
             </p>
           )}
         </div>

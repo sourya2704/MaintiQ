@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../../lib/api";
+import { t, tRationale } from "../../lib/i18n";
 import { fmtDate, humanize, resolutionTone } from "../../lib/format";
 import type { IncidentDetail, RelatedResponse, ResolutionStatus } from "../../lib/types";
 import {
@@ -49,7 +50,7 @@ function stageState(inc: IncidentDetail): Record<string, "done" | "active" | "fa
 export function PipelineStepper({ inc }: { inc: IncidentDetail }) {
   const s = stageState(inc);
   return (
-    <ol className="grid grid-cols-5 gap-1 sm:gap-2" aria-label="Processing pipeline">
+    <ol className="grid grid-cols-5 gap-1 sm:gap-2" aria-label={t("Processing pipeline")}>
       {STAGES.map(({ key, label, icon: Icon }, i) => {
         const st = s[key];
         const color =
@@ -68,7 +69,7 @@ export function PipelineStepper({ inc }: { inc: IncidentDetail }) {
               {spinning ? <GearIcon size={22} className="animate-spin" /> : st === "done" ? <CheckIcon size={22} /> : st === "failed" ? <XIcon size={22} /> : <Icon size={22} />}
             </div>
             <span className={`text-[10px] font-semibold uppercase tracking-wider sm:text-[11px] ${st === "todo" || st === "skipped" ? "text-ink-mute" : "text-ink-dim"}`}>
-              {st === "skipped" ? (key === "prisma" ? "Typed (no STT)" : "Skipped") : label}
+              {t(st === "skipped" ? (key === "prisma" ? "Typed (no STT)" : "Skipped") : label)}
             </span>
           </li>
         );
@@ -101,11 +102,11 @@ export function ListBlock({
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-[11px] font-bold uppercase tracking-wide text-ink-dim">{title}</h3>
+        <h3 className="text-[11px] font-bold uppercase tracking-wide text-ink-dim">{t(title)}</h3>
         {badge}
       </div>
       {items.length === 0 && !editing ? (
-        <p className="text-sm italic text-ink-mute">{empty}</p>
+        <p className="text-sm italic text-ink-mute">{t(empty)}</p>
       ) : (
         <ul className="space-y-1.5">
           {items.map((item, i) => (
@@ -117,9 +118,9 @@ export function ListBlock({
                     value={item}
                     onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
                     className="!h-8 flex-1"
-                    aria-label={`${title} item ${i + 1}`}
+                    aria-label={`${t(title)} ${i + 1}`}
                   />
-                  <button type="button" aria-label="Remove" onClick={() => onChange(items.filter((_, j) => j !== i))} className="mt-1.5 text-ink-mute hover:text-alert">
+                  <button type="button" aria-label={t("Remove")} onClick={() => onChange(items.filter((_, j) => j !== i))} className="mt-1.5 text-ink-mute hover:text-alert">
                     <XIcon size={16} />
                   </button>
                 </>
@@ -139,8 +140,8 @@ export function ListBlock({
             setDraft("");
           }}
         >
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Add item…" className="!h-8" aria-label={`Add to ${title}`} />
-          <Button3D type="submit" size="sm" variant="neutral" icon={<PlusIcon size={14} />} aria-label="Add" />
+          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("Add item…")} className="!h-8" aria-label={t("Add item…")} />
+          <Button3D type="submit" size="sm" variant="neutral" icon={<PlusIcon size={14} />} aria-label={t("Add")} />
         </form>
       )}
     </div>
@@ -154,7 +155,7 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
   if (loading || !data)
     return (
       <div className="flex items-center gap-3 py-6 text-sm text-ink-mute">
-        <MemoryIcon size={22} className="animate-pulse text-brass" /> Scanning failure memory…
+        <MemoryIcon size={22} className="animate-pulse text-brass" /> {t("Scanning failure memory…")}
       </div>
     );
   if (data.no_match)
@@ -169,7 +170,7 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
     <div className="space-y-3">
       <p className="flex items-start gap-2 rounded-lg border border-warn/30 bg-warn/5 px-3 py-2 text-xs text-warn">
         <ShieldIcon size={15} className="mt-0.5 shrink-0" />
-        {data.disclaimer}
+        {t(data.disclaimer)}
       </p>
       <ol className="space-y-3">
         {data.results.map((r) => (
@@ -189,11 +190,11 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {r.rationale.map((why) => (
                   <span key={why} className="rounded-md border border-brass/30 bg-brass/5 px-2 py-0.5 text-[11px] text-brass">
-                    {why}
+                    {tRationale(why)}
                   </span>
                 ))}
               </div>
-              {r.actions_taken.length > 0 && <p className="mt-2 text-xs text-ink-dim">Actions then: {r.actions_taken.join("; ")}</p>}
+              {r.actions_taken.length > 0 && <p className="mt-2 text-xs text-ink-dim">{t("Actions then:")} {r.actions_taken.join("; ")}</p>}
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3 text-xs">
                 {r.outcome ? (
                   <>
@@ -203,10 +204,10 @@ export function RelatedList({ data, loading, error }: { data?: RelatedResponse; 
                       {r.outcome.verified_cause ? (
                         <>
                           {" "}
-                          · <span className="text-ok">verified cause: {r.outcome.verified_cause}</span>
+                          · <span className="text-ok">{t("verified cause:")} {r.outcome.verified_cause}</span>
                         </>
                       ) : (
-                        " · cause not verified"
+                        ` · ${t("cause not verified")}`
                       )}
                     </span>
                   </>
@@ -253,14 +254,14 @@ export function OutcomeForm({ onSubmit }: { onSubmit: (body: Record<string, unkn
     <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <Field label="What was done?">
-          <Textarea required rows={2} value={f.action_performed} onChange={(e) => setF({ ...f, action_performed: e.target.value })} placeholder="Replaced NDE bearing and re-greased" />
+          <Textarea required rows={2} value={f.action_performed} onChange={(e) => setF({ ...f, action_performed: e.target.value })} placeholder={t("Replaced NDE bearing and re-greased")} />
         </Field>
       </div>
       <Field label="Result">
         <Select value={f.resolution_status} onChange={(e) => setF({ ...f, resolution_status: e.target.value as ResolutionStatus })}>
-          <option value="resolved">Resolved</option>
-          <option value="monitoring">Monitoring</option>
-          <option value="unresolved">Unresolved</option>
+          <option value="resolved">{t("Resolved")}</option>
+          <option value="monitoring">{t("Monitoring")}</option>
+          <option value="unresolved">{t("Unresolved")}</option>
         </Select>
       </Field>
       <Field label="Verified cause" hint="Only if confirmed by inspection; leave blank if unknown">
@@ -304,8 +305,8 @@ export function AudioPlayer({ incidentId, audioId }: { incidentId: string; audio
       if (revoked) URL.revokeObjectURL(revoked);
     };
   }, [incidentId, audioId]);
-  if (error) return <span className="text-xs text-ink-mute">{error}</span>;
-  if (!url) return <span className="text-xs text-ink-mute">Loading audio…</span>;
+  if (error) return <span className="text-xs text-ink-mute">{t(error)}</span>;
+  if (!url) return <span className="text-xs text-ink-mute">{t("Loading audio…")}</span>;
   return <audio controls src={url} className="h-10 w-full" />;
 }
 

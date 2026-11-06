@@ -9,6 +9,8 @@ interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (organization_name: string, name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  /** Replace the signed-in user after a profile change (e.g. language). */
+  updateUser: (user: User) => void;
   can: (...roles: User["role"][]) => boolean;
 }
 
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register: async (organization_name, name, email, password) =>
         accept(await api.post("/api/auth/register", { organization_name, name, email, password })),
       logout,
+      updateUser: setUser,
       can: (...roles) => Boolean(user && roles.includes(user.role)),
     }),
     [user, loading, logout],

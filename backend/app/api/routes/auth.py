@@ -7,7 +7,14 @@ from app.core.rate_limit import auth_rate_limit
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models import Organization, User
 from app.models.enums import Role
-from app.schemas.auth import ChangePasswordIn, LoginIn, MeOut, RegisterIn, TokenOut
+from app.schemas.auth import (
+    ChangePasswordIn,
+    LanguageIn,
+    LoginIn,
+    MeOut,
+    RegisterIn,
+    TokenOut,
+)
 from app.schemas.common import Message
 from app.services import audit
 
@@ -54,6 +61,17 @@ def login(body: LoginIn, db: DB):
 
 @router.get("/me", response_model=MeOut)
 def me(user: CurrentUser):
+    return user
+
+
+@router.put("/me/language", response_model=MeOut)
+def set_language(body: LanguageIn, db: DB, user: CurrentUser):
+    """Save the user's interface language so it follows them across sign-ins and devices."""
+    if user.preferred_language != body.language:
+        user.preferred_language = body.language
+        audit.record(db, organization_id=user.organization_id, actor_id=user.id, entity_type="user",
+                     entity_id=user.id, action="language_changed", details={"language": body.language})
+        db.commit()
     return user
 
 

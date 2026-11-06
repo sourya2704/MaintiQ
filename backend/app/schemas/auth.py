@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -31,6 +32,7 @@ class UserOut(ORM):
     email: str
     role: Role
     is_active: bool
+    preferred_language: Literal["en", "hi"] | None = None
     created_at: datetime
 
 
@@ -60,3 +62,7 @@ class UserUpdateIn(BaseModel):
 class ChangePasswordIn(BaseModel):
     current_password: str = Field(min_length=1, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class LanguageIn(BaseModel):
+    language: Literal["en", "hi"]

@@ -98,6 +98,7 @@ export const api = {
   get: <T>(path: string, query?: Query) => request<T>("GET", path, { query }),
   post: <T>(path: string, json?: unknown, query?: Query) => request<T>("POST", path, { json, query }),
   patch: <T>(path: string, json: unknown) => request<T>("PATCH", path, { json }),
+  put: <T>(path: string, json: unknown) => request<T>("PUT", path, { json }),
   del: <T = void>(path: string, query?: Query) => request<T>("DELETE", path, { query }),
   upload: <T>(path: string, form: FormData, headers?: Record<string, string>) =>
     request<T>("POST", path, { form, headers }),

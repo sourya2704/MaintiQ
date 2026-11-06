@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
+import { t, tNode, useLanguage } from "../../lib/i18n";
 import type { IntegrationStatus } from "../../lib/types";
 import {
   FactoryIcon,
@@ -36,7 +37,7 @@ export function Logo({ compact = false, light = false }: { compact?: boolean; li
         <div className="leading-none">
           <div className={`font-display text-xl font-bold uppercase tracking-wider ${light ? "text-cream" : "text-ink"}`}>Mantiq</div>
           <div className={`mt-0.5 text-[10px] font-semibold uppercase tracking-wider ${light ? "text-cream/60" : "text-ink-mute"}`}>
-            Maintenance memory
+            {t("Maintenance memory")}
           </div>
         </div>
       )}
@@ -65,7 +66,7 @@ function ProviderChips() {
             }`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${live ? "bg-ok" : off ? "bg-ink-mute" : "bg-warn"}`} />
-            {p.provider} {live ? "live" : p.mode}
+            {p.provider} {t(live ? "live" : p.mode)}
           </span>
         );
       })}
@@ -92,7 +93,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
             <>
               {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r bg-rust" />}
               <Icon size={19} className={isActive ? "text-[#d9b98a]" : "text-cream/50 group-hover:text-cream/80"} />
-              {label}
+              {t(label)}
             </>
           )}
         </NavLink>
@@ -103,6 +104,7 @@ function NavItems({ onNavigate }: { onNavigate?: () => void }) {
 
 export default function AppShell(): ReactNode {
   const { user, logout } = useAuth();
+  const { lang, setLang } = useLanguage();
   const [open, setOpen] = useState(false);
 
   const userCard = (
@@ -110,11 +112,19 @@ export default function AppShell(): ReactNode {
       <div className="truncate text-sm font-semibold text-cream">{user?.name}</div>
       <div className="truncate text-xs text-cream/55">{user?.organization?.name}</div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="rounded bg-cream/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-[#d9b98a]">{user?.role}</span>
+        <span className="rounded bg-cream/10 px-1.5 py-0.5 font-mono text-[10px] uppercase text-[#d9b98a]">{user?.role && t(user.role)}</span>
         <button onClick={logout} className="flex items-center gap-1 text-xs text-cream/55 hover:text-cream">
-          <LogoutIcon size={14} /> Sign out
+          <LogoutIcon size={14} /> {t("Sign out")}
         </button>
       </div>
+      <button
+        onClick={() => setLang(lang === "en" ? "hi" : "en")}
+        lang={lang === "en" ? "hi" : "en"}
+        className="mt-3 w-full rounded-md border border-cream/15 py-1.5 text-xs font-semibold text-cream/75 transition hover:border-cream/40 hover:text-cream"
+        title={t("Change language")}
+      >
+        {lang === "en" ? "हिन्दी में देखें" : "View in English"}
+      </button>
     </div>
   );
 
@@ -141,7 +151,7 @@ export default function AppShell(): ReactNode {
             >
               <div className="mb-8 flex items-center justify-between">
                 <Logo light />
-                <button aria-label="Close menu" onClick={() => setOpen(false)} className="text-cream/70">
+                <button aria-label={t("Close menu")} onClick={() => setOpen(false)} className="text-cream/70">
                   <XIcon />
                 </button>
               </div>
@@ -155,7 +165,7 @@ export default function AppShell(): ReactNode {
       <div className="lg:pl-60">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur sm:px-6">
           <div className="flex items-center gap-3">
-            <button aria-label="Open menu" className="text-ink-dim lg:hidden" onClick={() => setOpen(true)}>
+            <button aria-label={t("Open menu")} className="text-ink-dim lg:hidden" onClick={() => setOpen(true)}>
               <MenuIcon />
             </button>
             <div className="lg:hidden">
@@ -177,10 +187,10 @@ export function PageHeader({ title, kicker, actions, icon }: { title: string; ki
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="group">
-        {kicker && <div className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-brass">{kicker}</div>}
+        {kicker && <div className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-brass">{t(kicker)}</div>}
         <h1 className="flex items-center gap-2.5 font-display text-3xl font-bold uppercase tracking-wide">
           {icon && <span className="text-rust">{icon}</span>}
-          {title}
+          {tNode(title)}
         </h1>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

@@ -8,6 +8,7 @@ import { Button3D } from "../components/ui/Button3D";
 import { Input, Panel, Select } from "../components/ui/kit";
 import { api } from "../lib/api";
 import { humanize } from "../lib/format";
+import { t } from "../lib/i18n";
 import type { Machine, Page, RelatedResponse } from "../lib/types";
 
 
@@ -38,15 +39,15 @@ export default function MemorySearch() {
           }}
         >
           <p className="max-w-xl text-sm text-ink-dim">
-            Describe what you're seeing. Mantiq searches only your organisation's own incident history and explains every match.
+            {t("Describe what you're seeing. Mantiq searches only your organisation's own incident history and explains every match.")}
           </p>
           <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
             <div className="relative">
               <SearchBoltIcon size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brass" />
-              <Input aria-label="Describe the symptoms" className="!h-12 pl-10 text-base" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. grinding noise and vibration at start-up" />
+              <Input aria-label={t("Describe the symptoms")} className="!h-12 pl-10 text-base" value={text} onChange={(e) => setText(e.target.value)} placeholder={t("e.g. grinding noise and vibration at start-up")} />
             </div>
-            <Select aria-label="Machine (optional)" className="!h-12" value={machineId} onChange={(e) => setMachineId(e.target.value)}>
-              <option value="">Any machine</option>
+            <Select aria-label={t("Machine (optional)")} className="!h-12" value={machineId} onChange={(e) => setMachineId(e.target.value)}>
+              <option value="">{t("Any machine")}</option>
               {machines.data?.items.map((m) => <option key={m.id} value={m.id}>{m.asset_code} · {m.type}</option>)}
             </Select>
           </div>
@@ -64,7 +65,8 @@ export default function MemorySearch() {
                 }}
                 className="rounded-full border border-line px-3 py-1 text-xs text-ink-mute transition hover:border-brass/50 hover:text-brass"
               >
-                {ex}
+                {/* label in the interface language; the search runs on the English example */}
+                {t(ex)}
               </button>
             ))}
           </div>
@@ -79,9 +81,9 @@ export default function MemorySearch() {
             tag={
               results.data && results.data.query_symptoms.length > 0 ? (
                 <span className="flex flex-wrap gap-1.5">
-                  {results.data.query_symptoms.map((t) => (
-                    <span key={t} className="flex items-center gap-1 text-[11px] text-rust">
-                      <SymptomIcon tag={t} size={12} /> {humanize(t)}
+                  {results.data.query_symptoms.map((tag) => (
+                    <span key={tag} className="flex items-center gap-1 text-[11px] text-rust">
+                      <SymptomIcon tag={tag} size={12} /> {t(humanize(tag))}
                     </span>
                   ))}
                 </span>

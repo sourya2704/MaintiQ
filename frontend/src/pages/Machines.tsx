@@ -12,6 +12,7 @@ import { EmptyState, ErrorBox, Input, Panel, Pill, Select, Skeleton, StatusPill,
 import { Card } from "../components/ui/Card";
 import { api } from "../lib/api";
 import { machineStatusTone, timeAgo } from "../lib/format";
+import { t } from "../lib/i18n";
 import type { Machine, Page } from "../lib/types";
 
 export default function Machines() {
@@ -37,7 +38,7 @@ export default function Machines() {
     onSuccess: (m) => {
       qc.invalidateQueries({ queryKey: ["machines"] });
       qc.invalidateQueries({ queryKey: ["machine-types"] });
-      toast("ok", `${m.asset_code} commissioned`);
+      toast("ok", t("{code} commissioned", { code: m.asset_code }));
       setAdding(false);
       navigate(`/machines/${m.id}`);
     },
@@ -85,8 +86,8 @@ export default function Machines() {
         <div className="relative">
           <SearchBoltIcon size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-mute" />
           <Input
-            aria-label="Search machines"
-            placeholder="Search asset code, name, location…"
+            aria-label={t("Search machines")}
+            placeholder={t("Search asset code, name, location…")}
             className="pl-9"
             value={q}
             onChange={(e) => {
@@ -95,13 +96,13 @@ export default function Machines() {
             }}
           />
         </div>
-        <Select aria-label="Filter by type" value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
-          <option value="">All types</option>
+        <Select aria-label={t("Filter by type")} value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
+          <option value="">{t("All types")}</option>
           {types.data?.map((t) => <option key={t} value={t}>{t}</option>)}
         </Select>
-        <Select aria-label="Filter by status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-          <option value="">Any status</option>
-          {["operational", "degraded", "down", "retired"].map((s) => <option key={s} value={s}>{s}</option>)}
+        <Select aria-label={t("Filter by status")} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+          <option value="">{t("Any status")}</option>
+          {["operational", "degraded", "down", "retired"].map((s) => <option key={s} value={s}>{t(s)}</option>)}
         </Select>
       </div>
 
@@ -136,10 +137,10 @@ export default function Machines() {
                 </div>
                 <div className="mt-auto flex items-center justify-between border-t border-line pt-3 text-xs text-ink-mute">
                   <span>
-                    <span className="font-mono text-ink">{m.incident_count ?? 0}</span> incidents ·{" "}
-                    <span className={m.open_incident_count ? "font-mono text-rust" : "font-mono text-ink"}>{m.open_incident_count ?? 0}</span> open
+                    <span className="font-mono text-ink">{m.incident_count ?? 0}</span> {t("incidents")} ·{" "}
+                    <span className={m.open_incident_count ? "font-mono text-rust" : "font-mono text-ink"}>{m.open_incident_count ?? 0}</span> {t("open")}
                   </span>
-                  <span>{m.last_incident_at ? timeAgo(m.last_incident_at) : "no history"}</span>
+                  <span>{m.last_incident_at ? timeAgo(m.last_incident_at) : t("no history")}</span>
                 </div>
                 {m.is_seed && <Pill tone="mute" className="self-start">demo data</Pill>}
               </div>
