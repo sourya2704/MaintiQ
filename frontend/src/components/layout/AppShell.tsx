@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState, type ReactNode } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Suspense, useState, type ReactNode } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { t, tNode, useLanguage } from "../../lib/i18n";
@@ -132,7 +132,7 @@ function BottomBar({ items }: { items: NavEntry[] }) {
   );
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 flex items-end border-t border-line bg-card/95 backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 flex items-end border-t border-line bg-card/95 lg:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label={t("Main menu")}
     >
@@ -155,6 +155,7 @@ export default function AppShell(): ReactNode {
   const { lang, setLang } = useLanguage();
   const [open, setOpen] = useState(false);
   const items = navFor(user?.role === "technician");
+  const { pathname } = useLocation();
 
   const userCard = (dark: boolean) => (
     <div className={`rounded-lg p-3 ${dark ? "bg-cream/5" : "bg-sunk"}`}>
@@ -226,7 +227,7 @@ export default function AppShell(): ReactNode {
       </AnimatePresence>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-canvas/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-line bg-canvas/95 px-4 sm:px-6">
           <div className="lg:hidden">
             <Logo compact />
           </div>
@@ -243,10 +244,30 @@ export default function AppShell(): ReactNode {
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:pb-10">
-          <Outlet />
+          {/* Only the page area waits for a page's code, so the menu and header never blink out.
+              Keyed on the path, so each page fades in once when you arrive. */}
+          <Suspense fallback={<PageSkeleton />}>
+            <div key={pathname} className="page-enter">
+              <Outlet />
+            </div>
+          </Suspense>
         </main>
       </div>
       <BottomBar items={items} />
+    </div>
+  );
+}
+
+function PageSkeleton() {
+  return (
+    <div className="space-y-4" aria-busy="true">
+      <div className="skeleton h-8 w-56 rounded-lg" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="skeleton h-28 rounded-xl" />
+        <div className="skeleton h-28 rounded-xl" />
+        <div className="skeleton h-28 rounded-xl" />
+      </div>
+      <div className="skeleton h-64 rounded-xl" />
     </div>
   );
 }

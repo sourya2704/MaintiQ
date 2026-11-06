@@ -1,7 +1,7 @@
 import { Instance, Instances } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { BloomEffect, EffectComposer, EffectPass, RenderPass, ToneMappingEffect, ToneMappingMode, VignetteEffect } from "postprocessing";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 /*
@@ -196,20 +196,56 @@ export function LitWindows({ fromX, toX, halfW, y }: { fromX: number; toX: numbe
  * Bloom pass. Takes over rendering while mounted (useFrame priority 1) and hands it back
  * to react-three-fiber when unmounted. Tone mapping moves into the pass so the glow is
  * computed on the bright, linear image.
+ *
+ * Kept cheap: the glow is worked out at half resolution with five blur levels. Shaders are
+ * built per output (this buffer or the screen), so handing drawing back to the screen used to
+ * rebuild every shader in one frame: the visible stall. Now, when `leaving` is set, the glow
+ * is switched off at once, the screen versions of the shaders are compiled in the background,
+ * and only then does `onLeft` let the parent remove the pass.
  */
-export function Bloom({ intensity = 1.1 }: { intensity?: number }) {
+export function Bloom({
+  glow = true,
+  small = false,
+  leaving = false,
+  onLeft,
+}: {
+  glow?: boolean;
+  small?: boolean;
+  leaving?: boolean;
+  onLeft?: () => void;
+}) {
   const { gl, scene, camera, size, viewport } = useThree();
-  const composer = useMemo(() => {
-    const c = new EffectComposer(gl, { frameBufferType: THREE.HalfFloatType });
+  const { composer, full, plain } = useMemo(() => {
+    const c = new EffectComposer(gl, { frameBufferType: THREE.HalfFloatType, multisampling: 0 });
     c.addPass(new RenderPass(scene, camera));
-    const bloom = new BloomEffect({ mipmapBlur: true, luminanceThreshold: 1, luminanceSmoothing: 0.25, intensity, radius: 0.72 });
+    const bloom = new BloomEffect({
+      mipmapBlur: true,
+      levels: 5,
+      resolutionScale: small ? 0.4 : 0.5,
+      luminanceThreshold: 1,
+      luminanceSmoothing: 0.25,
+      intensity: small ? 0.9 : 1.15,
+      radius: 0.7,
+    });
     const vignette = new VignetteEffect({ offset: 0.32, darkness: 0.55 });
-    c.addPass(new EffectPass(camera, bloom, new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }), vignette));
+    const fullPass = new EffectPass(camera, bloom, new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }), vignette);
+    const plainPass = new EffectPass(camera, new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC }), vignette);
+    plainPass.enabled = false;
+    c.addPass(fullPass);
+    c.addPass(plainPass);
+    fullPass.renderToScreen = true; // only one of the two is enabled at a time; both finish on screen
     bloomTarget.current = c.inputBuffer;
-    return c;
-  }, [gl, scene, camera, intensity]);
+    return { composer: c, full: fullPass, plain: plainPass };
+  }, [gl, scene, camera, small]);
+  useEffect(() => {
+    const on = glow && !leaving;
+    full.enabled = on;
+    plain.enabled = !on;
+  }, [glow, leaving, full, plain]);
+  const screenToneMapping = useRef<THREE.ToneMapping>(gl.toneMapping);
   useEffect(() => {
     const before = gl.toneMapping;
+    screenToneMapping.current = before;
     gl.toneMapping = THREE.NoToneMapping; // the pass tone maps instead
     return () => {
       gl.toneMapping = before;
@@ -218,6 +254,29 @@ export function Bloom({ intensity = 1.1 }: { intensity?: number }) {
     };
   }, [gl, composer]);
   useEffect(() => composer.setSize(size.width, size.height), [composer, size, viewport.dpr]);
+  useEffect(() => {
+    if (!leaving) return;
+    let cancelled = false;
+    // Build the screen versions of every shader without blocking: settings are read now,
+    // the driver compiles in the background, and the pass is removed once they are ready.
+    const tm = gl.toneMapping;
+    const target = gl.getRenderTarget();
+    gl.toneMapping = screenToneMapping.current;
+    gl.setRenderTarget(null);
+    let ready: Promise<unknown>;
+    try {
+      ready = gl.compileAsync(scene, camera);
+    } catch {
+      ready = Promise.resolve();
+    } finally {
+      gl.toneMapping = tm;
+      gl.setRenderTarget(target);
+    }
+    ready.catch(() => {}).then(() => !cancelled && onLeft?.());
+    return () => {
+      cancelled = true;
+    };
+  }, [leaving, gl, scene, camera, onLeft]);
   useFrame((_, dt) => composer.render(dt), 1);
   return null;
 }

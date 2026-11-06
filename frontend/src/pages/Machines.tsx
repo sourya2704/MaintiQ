@@ -121,7 +121,7 @@ export default function Machines() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {list.data?.items.map((m, i) => (
-            <Card key={m.id} delay={i * 0.04} onClick={() => navigate(`/machines/${m.id}`)} alert={m.status === "down"}>
+            <Card key={m.id} delay={i * 0.02} onClick={() => navigate(`/machines/${m.id}`)} alert={m.status === "down"}>
               <div className="flex h-full flex-col gap-4 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="grid h-14 w-14 place-items-center rounded-xl border border-line bg-sunk text-brass">

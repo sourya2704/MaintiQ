@@ -1,7 +1,7 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { gearGeometry, MAT, prefersReducedMotion, scrollState } from "./shared";
+import { gearGeometry, MAT, prefersReducedMotion, scrollState, useOnScreen } from "./shared";
 import { Studio } from "./Studio";
 
 type GearSpec = { teeth: number; r: number; pos: [number, number, number]; mat: THREE.Material; dir: 1 | -1 };
@@ -58,9 +58,11 @@ function Rig() {
 
 /** Interlocking brass and steel gear train; turns faster while the page scrolls. */
 export default function GearTrain({ className = "" }: { className?: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const onScreen = useOnScreen(box, "0px");
   return (
-    <div className={className} aria-hidden>
-      <Canvas camera={{ position: [0, 0, 11], fov: 42 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
+    <div ref={box} className={className} aria-hidden>
+      <Canvas camera={{ position: [0, 0, 11], fov: 42 }} dpr={[1, 1.5]} frameloop={onScreen ? "always" : "never"} gl={{ antialias: true, alpha: true }}>
         <Studio shadows={false} />
         <Rig />
       </Canvas>
