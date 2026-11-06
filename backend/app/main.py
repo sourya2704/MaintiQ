@@ -13,7 +13,16 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.routes import auth, dashboard, incidents, machines, memory, settings, users
+from app.api.routes import (
+    auth,
+    dashboard,
+    incidents,
+    machines,
+    memory,
+    messages,
+    settings,
+    users,
+)
 from app.core.config import get_settings
 from app.core.errors import install_error_handlers
 from app.db.session import engine
@@ -22,6 +31,23 @@ from app.services.retention import retention_loop
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 log = logging.getLogger("mantiq.http")
+
+
+# Same-origin app: scripts only from this site; Google Fonts for type; blob/data for recorded audio,
+# photo previews and 3D textures; camera and microphone only for this site (reporting faults).
+SECURITY_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; "
+        "connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; "
+        "frame-ancestors 'none'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(self), microphone=(self), geolocation=(), payment=()",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
 
 
 @asynccontextmanager
@@ -43,7 +69,11 @@ def create_app() -> FastAPI:
     s = get_settings()
     if s.environment == "production" and (s.jwt_secret == "change-me-in-production" or len(s.jwt_secret) < 32):
         raise RuntimeError("Set a strong JWT_SECRET (32+ characters) before running in production")
+    production = s.environment == "production"
     app = FastAPI(
+        docs_url=None if production else "/docs",
+        redoc_url=None if production else "/redoc",
+        openapi_url=None if production else "/openapi.json",
         title="Mantiq API",
         version="0.2.0",
         lifespan=lifespan,
@@ -65,12 +95,16 @@ def create_app() -> FastAPI:
         started = time.perf_counter()
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
+        for k, v in SECURITY_HEADERS.items():
+            response.headers.setdefault(k, v)
+        if production:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         # Path and status only: never bodies, tokens or transcripts.
         log.info("%s %s %s %dms rid=%s", request.method, request.url.path, response.status_code,
                  int((time.perf_counter() - started) * 1000), request_id)
         return response
 
-    for r in (auth, users, machines, incidents, memory, dashboard, settings):
+    for r in (auth, users, machines, incidents, memory, messages, dashboard, settings):
         app.include_router(r.router)
 
     @app.get("/api/health", tags=["health"])
@@ -82,7 +116,7 @@ def create_app() -> FastAPI:
         except Exception:
             db_ok = False
         return {"status": "ok" if db_ok else "degraded", "database": db_ok,
-                "providers": {"prisma": s.prisma_mode, "evon": s.evon_mode, "timbre": s.timbre_mode}}
+                "providers": {"prisma": s.prisma_mode, "evon": s.evon_mode, "gemini": s.ai_mode, "timbre": s.timbre_mode}}
 
     if s.static_dir and (Path(s.static_dir) / "index.html").is_file():
         mount_frontend(app, Path(s.static_dir))

@@ -62,6 +62,16 @@ class Settings(BaseSettings):
     evon_max_attempts: int = 2
     evon_max_history_records: int = 3
 
+    # Google Gemini: fix suggestions (grounded in Google Search) and translation.
+    # "live" needs GEMINI_API_KEY; "mock" uses the built-in knowledge base and no translation.
+    ai_mode: ProviderMode = "mock"
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+    ai_web_search: bool = True
+    ai_timeout_seconds: float = 90.0
+    ai_max_attempts: int = 3
+    ai_requests_per_user_per_hour: int = 30
+
     # Gnani Timbre (text-to-speech, optional)
     timbre_mode: ProviderMode = "disabled"
     timbre_model: str = "timbre-v2.5"

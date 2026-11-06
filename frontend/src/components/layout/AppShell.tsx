@@ -1,9 +1,12 @@
+import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { api } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { t, tNode, useLanguage } from "../../lib/i18n";
 import {
+  ChatIcon,
   FactoryIcon,
   GaugeIcon,
   MantiqMark,
@@ -24,6 +27,7 @@ function navFor(isMechanic: boolean): NavEntry[] {
         { to: "/", label: "My work", icon: GaugeIcon, end: true },
         { to: "/report", label: "Report fault", icon: MicIcon },
         { to: "/incidents", label: "My reports", icon: IncidentIcon },
+        { to: "/messages", label: "Messages", icon: ChatIcon },
         { to: "/machines", label: "Machines", icon: FactoryIcon },
         { to: "/memory", label: "Past fixes", icon: MemoryIcon },
         { to: "/settings", label: "Settings", icon: SlidersIcon },
@@ -32,6 +36,7 @@ function navFor(isMechanic: boolean): NavEntry[] {
         { to: "/", label: "Overview", icon: GaugeIcon, end: true },
         { to: "/report", label: "Report fault", icon: MicIcon },
         { to: "/incidents", label: "Incidents", icon: IncidentIcon },
+        { to: "/messages", label: "Messages", icon: ChatIcon },
         { to: "/machines", label: "Machines", icon: FactoryIcon },
         { to: "/memory", label: "Failure memory", icon: MemoryIcon },
         { to: "/settings", label: "Settings", icon: SlidersIcon },
@@ -54,7 +59,27 @@ export function Logo({ compact = false, light = false }: { compact?: boolean; li
   );
 }
 
+/** Unread message count, polled so a sent fix shows up without a reload. */
+function useUnread() {
+  const { data } = useQuery({
+    queryKey: ["unread"],
+    queryFn: () => api.get<{ unread: number }>("/api/messages/unread-count"),
+    refetchInterval: 30_000,
+  });
+  return data?.unread ?? 0;
+}
+
+function Badge({ n, dark }: { n: number; dark?: boolean }) {
+  if (!n) return null;
+  return (
+    <span className={`ml-auto grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-bold ${dark ? "bg-rust text-cream" : "bg-rust text-cream"}`}>
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
+
 function SideNav({ items }: { items: NavEntry[] }) {
+  const unread = useUnread();
   return (
     <nav className="space-y-0.5">
       {items.map(({ to, label, icon: Icon, end }) => (
@@ -73,6 +98,7 @@ function SideNav({ items }: { items: NavEntry[] }) {
               {isActive && <span className="absolute inset-y-2 left-0 w-1 rounded-r bg-rust" />}
               <Icon size={19} className={isActive ? "text-[#d9b98a]" : "text-cream/50"} />
               {t(label)}
+              {to === "/messages" && <Badge n={unread} dark />}
             </>
           )}
         </NavLink>
@@ -83,7 +109,8 @@ function SideNav({ items }: { items: NavEntry[] }) {
 
 /** Phone navigation: a thumb-reachable bar with the report button in the middle. */
 function BottomBar({ items }: { items: NavEntry[] }) {
-  const [home, report, list, machines, memory] = items;
+  const [home, report, list, messages, machines] = items;
+  const unread = useUnread();
   const tab = (e: NavEntry) => (
     <NavLink
       key={e.to}
@@ -91,7 +118,12 @@ function BottomBar({ items }: { items: NavEntry[] }) {
       end={e.end}
       className={({ isActive }) => `flex flex-1 flex-col items-center gap-0.5 pb-1.5 pt-2 text-[11px] font-medium ${isActive ? "text-rust" : "text-ink-mute"}`}
     >
-      <e.icon size={22} />
+      <span className="relative">
+        <e.icon size={22} />
+        {e.to === "/messages" && unread > 0 && (
+          <span className="absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-rust px-1 text-[10px] font-bold text-cream">{unread}</span>
+        )}
+      </span>
       <span className="max-w-full truncate px-1">{t(e.label)}</span>
     </NavLink>
   );
@@ -109,8 +141,8 @@ function BottomBar({ items }: { items: NavEntry[] }) {
         </span>
         <span className="mt-0.5 text-[11px] font-semibold text-rust">{t("Report")}</span>
       </NavLink>
+      {tab(messages)}
       {tab(machines)}
-      {tab(memory)}
     </nav>
   );
 }
@@ -178,9 +210,13 @@ export default function AppShell(): ReactNode {
                 </button>
               </div>
               {userCard(false)}
-              <NavLink to="/settings" onClick={() => setOpen(false)} className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-dim hover:bg-sunk">
-                <SlidersIcon size={18} /> {t("Settings")}
-              </NavLink>
+              {items
+                .filter((i) => i.to === "/memory" || i.to === "/settings")
+                .map(({ to, label, icon: Icon }) => (
+                  <NavLink key={to} to={to} onClick={() => setOpen(false)} className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-dim hover:bg-sunk">
+                    <Icon size={18} /> {t(label)}
+                  </NavLink>
+                ))}
             </motion.div>
           </motion.div>
         )}

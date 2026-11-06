@@ -58,9 +58,11 @@ export default function Machines() {
                 Import CSV
               </Button3D>
             )}
-            <Button3D variant="primary" icon={<PlusIcon size={16} />} onClick={() => { setAdding((a) => !a); setImporting(false); }}>
-              Add machine
-            </Button3D>
+            {can("admin", "supervisor") && (
+              <Button3D variant="primary" icon={<PlusIcon size={16} />} onClick={() => { setAdding((a) => !a); setImporting(false); }}>
+                Add machine
+              </Button3D>
+            )}
           </>
         }
       />
@@ -114,7 +116,7 @@ export default function Machines() {
           icon={<FactoryIcon size={44} />}
           title={q || type || status ? "No machines match" : "No machines yet"}
           body={q || type || status ? "Try a different search or filter." : "Commission your first machine to start capturing incidents."}
-          action={!q && !type && !status ? <Button3D variant="primary" onClick={() => setAdding(true)}>Add machine</Button3D> : undefined}
+          action={!q && !type && !status && can("admin", "supervisor") ? <Button3D variant="primary" onClick={() => setAdding(true)}>Add machine</Button3D> : undefined}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -3,7 +3,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { BearingIcon, MemoryIcon, MicIcon, ShieldIcon } from "../components/icons/MachineIcons";
 import { Logo } from "../components/layout/AppShell";
 import { Button3D } from "../components/ui/Button3D";
-import { BilingualLoop, Say, useBilingual } from "../components/ui/Bilingual";
+import { BilingualLoop, Say } from "../components/ui/Bilingual";
+import { tr } from "../lib/i18n";
 import { ErrorBox, Field, Input } from "../components/ui/kit";
 import { useAuth } from "../lib/auth";
 
@@ -24,9 +25,11 @@ export default function Login() {
   );
 }
 
-/** Sign-in and registration. Shown before a language is chosen, so all text loops English ⇄ Hindi. */
+/** "Email / ईमेल": both languages side by side for anyone who reads only one. */
+const both = (en: string) => `${en} / ${tr("hi", en)}`;
+
+/** Sign-in and registration. The heading types between English and Hindi; every other label shows both. */
 function LoginScreen() {
-  const { say } = useBilingual();
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,9 +61,8 @@ function LoginScreen() {
         <h1 className="mt-10 font-display text-4xl font-bold leading-snug tracking-wide">
           <Say>{mode === "login" ? "Sign in" : "Set up your plant"}</Say>
         </h1>
-        <p className="mt-2 min-h-[1.5em] text-ink-dim">
-          <Say>Voice-first maintenance records for industrial teams.</Say>
-        </p>
+        <p className="mt-2 text-ink-dim">Voice-first maintenance records for industrial teams.</p>
+        <p lang="hi" className="text-sm text-ink-mute">{tr("hi", "Voice-first maintenance records for industrial teams.")}</p>
 
         <div className="mt-8 grid grid-cols-2 rounded-lg border border-line bg-sunk p-1" role="tablist">
           {(["login", "register"] as const).map((m) => (
@@ -71,7 +73,7 @@ function LoginScreen() {
               onClick={() => setMode(m)}
               className={`rounded-md py-2 text-sm font-semibold transition ${mode === m ? "bg-card text-ink shadow-sm" : "text-ink-mute hover:text-ink"}`}
             >
-              <Say caret={false}>{m === "login" ? "Sign in" : "New organisation"}</Say>
+              {both(m === "login" ? "Sign in" : "New organisation")}
             </button>
           ))}
         </div>
@@ -79,18 +81,18 @@ function LoginScreen() {
         <form onSubmit={submit} className="mt-6 space-y-4">
           {mode === "register" && (
             <>
-              <Field label={<Say caret={false}>Organisation</Say>}>
-                <Input required minLength={2} value={form.org} onChange={set("org")} placeholder={say("Acme Steel – Plant 2")} />
+              <Field label={both("Organisation")}>
+                <Input required minLength={2} value={form.org} onChange={set("org")} placeholder={both("Organisation")} />
               </Field>
-              <Field label={<Say caret={false}>Your name</Say>}>
-                <Input required value={form.name} onChange={set("name")} autoComplete="name" />
+              <Field label={both("Your name")}>
+                <Input required value={form.name} onChange={set("name")} autoComplete="name" placeholder={both("Your name")} />
               </Field>
             </>
           )}
-          <Field label={<Say caret={false}>Email</Say>}>
-            <Input required type="email" value={form.email} onChange={set("email")} autoComplete="email" />
+          <Field label={both("Email")}>
+            <Input required type="email" value={form.email} onChange={set("email")} autoComplete="email" placeholder={both("Email")} />
           </Field>
-          <Field label={<Say caret={false}>Password</Say>} hint={mode === "register" ? <Say caret={false}>At least 8 characters</Say> : undefined}>
+          <Field label={both("Password")} hint={mode === "register" ? both("At least 8 characters") : undefined}>
             <Input
               required
               type="password"
@@ -98,11 +100,12 @@ function LoginScreen() {
               value={form.password}
               onChange={set("password")}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
+              placeholder={both("Password")}
             />
           </Field>
           {Boolean(error) && <ErrorBox error={error} />}
           <Button3D type="submit" variant="primary" size="lg" block loading={busy}>
-            <Say caret={false}>{mode === "login" ? "Sign in" : "Create organisation"}</Say>
+            {both(mode === "login" ? "Sign in" : "Create organisation")}
           </Button3D>
         </form>
       </div>
@@ -113,29 +116,20 @@ function LoginScreen() {
         </Suspense>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-espresso via-espresso/90 to-transparent p-10 pt-24">
           <p className="max-w-lg font-display text-4xl font-bold leading-tight tracking-wide text-cream">
-            <Say>Every fault remembered.</Say>{" "}
-            <span className="text-[#d9b98a]">
-              <Say>Every fix reused.</Say>
-            </span>
+            Every fault remembered. <span className="text-[#d9b98a]">Every fix reused.</span>
           </p>
           <div className="mt-6 grid max-w-2xl grid-cols-2 gap-x-8 gap-y-4">
             {FEATURES.map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-3">
                 <Icon size={20} className="mt-0.5 shrink-0 text-[#d9b98a]" />
                 <div>
-                  <div className="text-sm font-semibold text-cream">
-                    <Say caret={false}>{title}</Say>
-                  </div>
-                  <div className="text-sm text-cream/60">
-                    <Say caret={false}>{body}</Say>
-                  </div>
+                  <div className="text-sm font-semibold text-cream">{title}</div>
+                  <div className="text-sm text-cream/60">{body}</div>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-8 text-xs text-cream/40">
-            <Say caret={false}>Powered by Gnani Prisma, Evon and Timbre · decision support only</Say>
-          </p>
+          <p className="mt-8 text-xs text-cream/40">Powered by Gnani Prisma, Evon and Timbre. Decision support only.</p>
         </div>
       </div>
     </div>

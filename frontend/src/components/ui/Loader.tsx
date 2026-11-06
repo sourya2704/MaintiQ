@@ -1,7 +1,7 @@
 import { t } from "../../lib/i18n";
 import { GearIcon } from "../icons/MachineIcons";
 
-export function Loader({ label = "Spinning up" }: { label?: string }) {
+export function Loader({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-ink-mute" role="status">
       <GearIcon size={42} className="animate-spin text-rust" style={{ animationDuration: "2.5s" }} />

@@ -379,6 +379,18 @@ export const GlobeIcon = (p: P) => (
     <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
   </Svg>
 );
+export const ChatIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-7l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5z" />
+    <path d="M8 10h8M8 13h5" />
+  </Svg>
+);
+export const SendIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 12l16-7-6 16-3-6.5z" />
+    <path d="M11 14.5l3.5-3.5" />
+  </Svg>
+);
 export const CameraIcon = (p: P) => (
   <Svg {...p}>
     <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z" />
@@ -423,18 +435,67 @@ export function SymptomIcon({ tag, ...p }: P & { tag: string }) {
   return <Icon {...p} />;
 }
 
-export function machineKind(type: string): "motor" | "pump" | "conveyor" | "compressor" | "generic" {
+export type MachineKindName = "motor" | "pump" | "conveyor" | "compressor" | "gearbox" | "fan" | "generator" | "press" | "lathe" | "boiler";
+
+/** Which 3D model and icon a machine gets, from its free-text type. */
+export function machineKind(type: string): MachineKindName {
   const t = type.toLowerCase();
   if (t.includes("pump")) return "pump";
   if (t.includes("conveyor") || t.includes("belt")) return "conveyor";
   if (t.includes("compressor")) return "compressor";
-  if (t.includes("motor") || t.includes("drive") || t.includes("fan")) return "motor";
-  return "generic";
+  if (t.includes("fan") || t.includes("blower")) return "fan";
+  if (t.includes("generator") || t.includes("genset") || t.includes("dg set") || t.includes("alternator")) return "generator";
+  if (t.includes("press")) return "press";
+  if (t.includes("lathe") || t.includes("cnc") || t.includes("turning") || t.includes("milling")) return "lathe";
+  if (t.includes("boiler") || t.includes("steam")) return "boiler";
+  if (t.includes("gearbox") || t.includes("reducer") || t.includes("gear")) return "gearbox";
+  if (t.includes("motor") || t.includes("drive")) return "motor";
+  return "gearbox";
 }
 
+export const FanIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 19V8.5a6 6 0 0 1 12 0V10h3v4h-4.5" />
+    <circle cx="11" cy="9" r="2.5" />
+    <path d="M4 20h14" />
+  </Svg>
+);
+export const GeneratorIcon = (p: P) => (
+  <Svg {...p}>
+    <rect x="3" y="7" width="18" height="11" rx="1.5" />
+    <path d="M7 18v2M17 18v2M15 4v3M12.5 9.5l-2 3h3l-2 3" />
+  </Svg>
+);
+export const PressIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 21V4h14v17M3 21h18M8 4v4h8V4M9 8v4h6V8M7 17h10" />
+  </Svg>
+);
+export const LatheIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M2 17h20M4 17v3M20 17v3M4 9h5v8H4zM9 12h8M17 10h3v5h-3z" />
+    <circle cx="6.5" cy="13" r="1.2" />
+  </Svg>
+);
+export const BoilerIcon = (p: P) => (
+  <Svg {...p}>
+    <rect x="3" y="9" width="15" height="9" rx="4.5" />
+    <path d="M18 11h2V3M6 18v2M15 18v2M7 13.5h5" />
+  </Svg>
+);
+
 export function MachineTypeIcon({ type, ...p }: P & { type: string }) {
-  const Icon = { motor: MotorIcon, pump: PumpIcon, conveyor: ConveyorIcon, compressor: CompressorIcon, generic: GearIcon }[
-    machineKind(type)
-  ];
+  const Icon = {
+    motor: MotorIcon,
+    pump: PumpIcon,
+    conveyor: ConveyorIcon,
+    compressor: CompressorIcon,
+    gearbox: GearIcon,
+    fan: FanIcon,
+    generator: GeneratorIcon,
+    press: PressIcon,
+    lathe: LatheIcon,
+    boiler: BoilerIcon,
+  }[machineKind(type)];
   return <Icon {...p} />;
 }

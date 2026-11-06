@@ -115,7 +115,7 @@ async def import_machines(
 
 
 @router.post("", response_model=MachineOut, status_code=status.HTTP_201_CREATED)
-def create_machine(body: MachineCreate, db: DB, user: CurrentUser):
+def create_machine(body: MachineCreate, db: DB, user: Lead):
     machine = Machine(organization_id=user.organization_id, **body.model_dump())
     db.add(machine)
     try:
@@ -163,7 +163,7 @@ def get_machine(machine_id: uuid.UUID, db: DB, user: CurrentUser,
 
 
 @router.patch("/{machine_id}", response_model=MachineOut)
-def update_machine(machine_id: uuid.UUID, body: MachineUpdate, db: DB, user: CurrentUser):
+def update_machine(machine_id: uuid.UUID, body: MachineUpdate, db: DB, user: Lead):
     machine = get_machine_for_user(db, user, machine_id)
     # Optional details can be cleared with null; required fields ignore null.
     changes = {k: v for k, v in body.model_dump(exclude_unset=True).items()

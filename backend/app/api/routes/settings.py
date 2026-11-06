@@ -55,6 +55,8 @@ def integrations(db: DB, user: CurrentUser):
                      "Speech-to-text"),
             provider("evon", s.evon_mode, s.evon_model, s.evon_base_url.rstrip("/") + "/chat/completions",
                      evon_configured, "Structured incident extraction"),
+            provider("gemini", s.ai_mode, s.gemini_model, "generativelanguage.googleapis.com", bool(s.gemini_api_key),
+                     "Fix suggestions with web search, and translation"),
             provider("timbre", s.timbre_mode, s.timbre_model, s.gnani_base_url.rstrip("/") + "/api/v1/tts/inference",
                      key_set, "Text-to-speech (optional)"),
         ],

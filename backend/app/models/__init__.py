@@ -6,6 +6,7 @@ from app.models.entities import (
     IncidentPhoto,
     Machine,
     MaintenanceOutcome,
+    Message,
     Organization,
     User,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "IncidentPhoto",
     "Machine",
     "MaintenanceOutcome",
+    "Message",
     "Organization",
     "User",
 ]

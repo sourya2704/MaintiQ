@@ -36,6 +36,12 @@ services:
         sync: false
       - key: EVON_API_KEY
         sync: false
+      - key: AI_MODE
+        value: live          # fix suggestions and translation with Google Gemini
+      - key: GEMINI_API_KEY
+        sync: false          # your Gemini API key (aistudio.google.com)
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
       - key: SEED_DEMO
         value: "true"        # creates the fictional demo plant on first start
       - key: SEED_PASSWORD

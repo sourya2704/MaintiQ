@@ -55,7 +55,7 @@ function usePlantFloor() {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const navigate = useNavigate();
   const track = useRef<HTMLDivElement>(null);
   const { data, isLoading, error, refetch } = useQuery({
@@ -73,7 +73,7 @@ export default function Dashboard() {
           <GearTrain className="absolute inset-y-0 right-0 hidden w-[45%] md:block" />
         </Suspense>
         <div className="relative max-w-xl p-6 sm:p-8">
-          <div className="font-mono text-[11px] text-brass">{t("Control room")}</div>
+          <div className="text-[13px] font-medium text-brass">{user?.organization?.name}</div>
           <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-wide sm:text-4xl">
             {t("Hello, {name}", { name: user?.name.split(" ")[0] ?? "" })}
           </h1>
@@ -107,8 +107,8 @@ export default function Dashboard() {
           : [
               { label: "Open incidents", value: data.incidents.open, sub: t("{n} urgent", { n: data.incidents.urgent_open }), tone: "rust" as const, to: "/incidents?resolution_status=open", glow: data.incidents.urgent_open ? ("alert" as const) : undefined },
               { label: "Awaiting review", value: data.incidents.awaiting_review, sub: t("AI drafts to confirm"), tone: "warn" as const, to: "/incidents?processing_status=awaiting_review" },
-              { label: "Resolved · 30d", value: data.incidents.resolved_last_30_days, sub: t("{n} reported in 30d", { n: data.incidents.reported_last_30_days }), tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
-              { label: "Machines", value: data.machines.total, sub: t("{down} down · {degraded} degraded", { down: data.machines.by_status.down ?? 0, degraded: data.machines.by_status.degraded ?? 0 }), tone: "brass" as const, to: "/machines" },
+              { label: "Resolved in 30 days", value: data.incidents.resolved_last_30_days, sub: t("{n} reported in 30d", { n: data.incidents.reported_last_30_days }), tone: "ok" as const, to: "/incidents?resolution_status=resolved" },
+              { label: "Machines", value: data.machines.total, sub: t("{down} down, {degraded} degraded", { down: data.machines.by_status.down ?? 0, degraded: data.machines.by_status.degraded ?? 0 }), tone: "brass" as const, to: "/machines" },
             ].map((k, i) => (
               <Card key={k.label} delay={i * 0.07} onClick={() => navigate(k.to)} alert={Boolean(k.glow)}>
                 <div className="p-5">
@@ -127,7 +127,7 @@ export default function Dashboard() {
       <div ref={track} className="relative h-[230vh]">
         <div className="sticky top-14 flex h-[calc(100vh-3.5rem)] flex-col pb-4 pt-2">
           <PageHeader
-            kicker="Live plant floor · scroll to fly in"
+            kicker="Scroll down to walk the floor"
             title="Plant Floor"
             icon={<CubeIcon size={26} />}
             actions={<span className="text-xs text-ink-mute">{t("Click a machine to open it")}</span>}
@@ -143,7 +143,7 @@ export default function Dashboard() {
                   icon={<FactoryIcon size={44} />}
                   title="No machines yet"
                   body="Add your first machine to see it on the 3D plant floor."
-                  action={<Button3D variant="dark" onClick={() => navigate("/machines")}>Add machine</Button3D>}
+                  action={can("admin", "supervisor") ? <Button3D variant="dark" onClick={() => navigate("/machines")}>Add machine</Button3D> : undefined}
                 />
               </div>
             )}
@@ -151,7 +151,7 @@ export default function Dashboard() {
               <span className="text-ok">● {t("operational")}</span>
               <span className="text-warn">● {t("degraded")}</span>
               <span className="text-alert">● {t("down")}</span>
-              <span>{t("Floor tape shows status · open faults animate the machine")}</span>
+              <span>{t("Tape colour shows status. Machines with open faults shake, leak or smoke.")}</span>
             </div>
           </div>
         </div>

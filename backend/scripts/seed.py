@@ -2,7 +2,7 @@
 
 Usage:  uv run python -m scripts.seed [--reset]
 
-Creates one organization with three users, five machines and a set of
+Creates one organization with three users, eleven machines (one of each modelled type) and a set of
 historical incidents covering repeated symptoms, different outcomes, an
 unresolved case and an incident with no recorded outcome. All rows are marked
 is_seed / source=seed so they are never mistaken for live provider output.
@@ -49,6 +49,12 @@ MACHINES = [
     ("P-201", "Coolant circulation pump", "centrifugal pump", "Ganga Pumps", "CP-40", "Utility room"),
     ("C-301", "Packaging conveyor", "conveyor", "Konark Conveyors", "BC-1200", "Packing hall"),
     ("K-401", "Plant air compressor", "air compressor", "Sahyadri Air", "SC-22", "Compressor house"),
+    ("R-106", "Mixer gear reducer", "gearbox", "Vindhya Gears", "HR-125", "Line 2, Bay C"),
+    ("F-501", "Boiler induced-draft fan", "centrifugal fan", "Konark Air Systems", "ID-450", "Boiler house"),
+    ("G-601", "Standby diesel generator", "diesel generator", "Sahyadri Power", "DG-125", "DG yard"),
+    ("H-701", "Bearing press", "hydraulic press", "Narmada Hydraulics", "HP-100", "Maintenance workshop"),
+    ("L-801", "Tool room lathe", "centre lathe", "Vindhya Machine Tools", "CL-460", "Tool room"),
+    ("B-901", "Process steam boiler", "steam boiler", "Ganga Thermal", "FT-2000", "Boiler house"),
 ]
 
 # (asset, days_ago, transcript, summary, symptoms, observations, actions, suspected, outcome | None, urgency, review)
@@ -103,6 +109,19 @@ INCIDENTS = [
 ]
 
 
+def add_missing_machines(db, org: Organization) -> int:
+    """Machines added to the sample plant in later releases appear on existing databases too."""
+    have = set(db.scalars(select(Machine.asset_code).where(Machine.organization_id == org.id)))
+    added = 0
+    for code, name, mtype, mfr, model, loc in MACHINES:
+        if code not in have:
+            db.add(Machine(organization_id=org.id, asset_code=code, name=name, type=mtype, manufacturer=mfr,
+                           model=model, location=loc, is_seed=True))
+            added += 1
+    db.commit()
+    return added
+
+
 def rename_legacy(db) -> bool:
     """Rename a plant seeded by an earlier release. Returns True if one was found."""
     org = db.scalar(select(Organization).where(Organization.name == LEGACY_ORG_NAME))
@@ -119,6 +138,7 @@ def rename_legacy(db) -> bool:
         if inc.confidence_notes == "Fictional demo record.":
             inc.confidence_notes = None
     db.commit()
+    add_missing_machines(db, org)
     print(f"Renamed '{LEGACY_ORG_NAME}' to '{ORG_NAME}'.")
     return True
 
@@ -132,7 +152,8 @@ def seed(reset: bool = False) -> None:
             return
         org = db.scalar(select(Organization).where(Organization.name == ORG_NAME))
         if org and not reset:
-            print(f"Seed organization already exists ({org.id}); use --reset to recreate.")
+            added = add_missing_machines(db, org)
+            print(f"Seed organization already exists ({org.id}); added {added} new machine(s). Use --reset to recreate.")
             return
         if org and reset:
             for inc in db.scalars(select(Incident).where(Incident.organization_id == org.id)):
