@@ -114,3 +114,16 @@ def test_jobs_interrupted_by_restart_are_failed_and_retryable(client, auth):
     after = client.get(f"/api/incidents/{inc['id']}", headers=auth).json()
     assert after["processing_status"] == "analysis_failed"
     assert client.post(f"/api/incidents/{inc['id']}/analyze", headers=auth).status_code == 202
+
+
+def test_evon_credentials_status_is_reported_honestly(client, auth, settings):
+    def evon():
+        return next(p for p in client.get("/api/settings/integrations", headers=auth).json()["providers"]
+                    if p["provider"] == "evon")
+
+    settings.evon_mode, settings.evon_base_url, settings.evon_api_key = "live", "https://evon.example.com/v1", ""
+    assert evon()["credentials_configured"] is False and evon()["live_ready"] is False
+    settings.evon_api_key = "key"
+    assert evon()["live_ready"] is True
+    settings.evon_base_url, settings.evon_api_key = "http://localhost:30000/v1", ""
+    assert evon()["credentials_configured"] is True
